@@ -4,7 +4,8 @@ Pydantic models for Riksbank data validation and documentation.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
+from typing import Dict, List, Optional, Any
 
 from pydantic import BaseModel, Field
 
@@ -18,14 +19,53 @@ class Observation(BaseModel):
     value: float
 
 
+class ForecastMetadata(BaseModel):
+    """
+    Metadata for a forecast vintage.
+    """
+    
+    revision_dtm: datetime = Field(..., description="Timestamp when this forecast was revised")
+    forecast_cutoff_date: date = Field(..., description="Date when forecast data was finalized")
+    policy_round: str = Field(..., description="Policy round identifier (e.g. '2023:4')")
+    policy_round_code: str = Field(..., description="Internal code for the policy round")
+    policy_round_end_dtm: datetime = Field(..., description="End timestamp for the policy round")
+
+
+class ForecastObservation(BaseModel):
+    """
+    A single forecast observation with date and value.
+    """
+    
+    dt: str = Field(..., description="Date of the observation in YYYY-MM-DD format")
+    value: float = Field(..., description="Value of the observation")
+
+
+class ForecastVintage(BaseModel):
+    """
+    A forecast vintage containing metadata and observations.
+    """
+    
+    metadata: ForecastMetadata
+    observations: List[ForecastObservation]
+
+
+class ForecastSeries(BaseModel):
+    """
+    A complete forecast series with its vintages.
+    """
+    
+    external_id: str = Field(..., description="Series identifier")
+    vintages: List[ForecastVintage]
+
+
 class ForecastResult(BaseModel):
     """
     Result of a forecast data query.
     """
 
     series_id: str
-    policy_round: str | None = None
-    observations: list[Observation]
+    policy_round: Optional[str] = None
+    observations: List[Observation]
 
 
 class PolicyRound(BaseModel):
@@ -35,7 +75,7 @@ class PolicyRound(BaseModel):
 
     id: str
     date: str
-    description: str | None = None
+    description: Optional[str] = None
 
 
 class SeriesInfo(BaseModel):
@@ -45,8 +85,9 @@ class SeriesInfo(BaseModel):
 
     id: str
     name: str
-    description: str | None = None
-    unit: str | None = None
+    description: Optional[str] = None
+    unit: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
 class ExchangeRateData(BaseModel):
@@ -55,7 +96,7 @@ class ExchangeRateData(BaseModel):
     """
 
     series_id: str
-    observations: list[Observation]
+    observations: List[Observation]
 
 
 class InterestRateData(BaseModel):
@@ -63,7 +104,7 @@ class InterestRateData(BaseModel):
     Interest rate data result.
     """
 
-    observations: list[Observation]
+    observations: List[Observation]
 
 
 class CalendarDay(BaseModel):
@@ -140,3 +181,11 @@ class ObservationAggregate(BaseModel):
     model_config = {
         "populate_by_name": True
     }
+
+
+class MonetaryPolicyResponse(BaseModel):
+    """
+    Generic response model for Monetary Policy API endpoints.
+    """
+    
+    data: List[Any]

@@ -2,11 +2,23 @@
 Tools for working with the Riksbank's Monetary Policy data.
 """
 
-from riksbank_mcp.models import ForecastResult, Observation, PolicyRound, SeriesInfo
+import logging
+from typing import List, Optional, Dict, Any
+
+from riksbank_mcp.models import (
+    ForecastResult, 
+    Observation, 
+    PolicyRound, 
+    SeriesInfo,
+    MonetaryPolicyResponse,
+    ForecastSeries
+)
 from riksbank_mcp.services.monetary_policy_api import riksbanken_request
 
+# Set up logging
+logger = logging.getLogger(__name__)
 
-async def list_policy_rounds() -> list[PolicyRound]:
+async def list_policy_rounds() -> List[PolicyRound]:
     """
     List all available monetary policy rounds from the Riksbank.
 
@@ -14,7 +26,7 @@ async def list_policy_rounds() -> list[PolicyRound]:
     identifiers, dates, and descriptions when available.
 
     Returns:
-        list[PolicyRound]: A list of policy rounds with their metadata.
+        List[PolicyRound]: A list of policy rounds with their metadata.
 
     Example:
         >>> rounds = await list_policy_rounds()
@@ -22,35 +34,39 @@ async def list_policy_rounds() -> list[PolicyRound]:
         ...     print(f"{r.id}: {r.date}")
     """
     response = await riksbanken_request("forecasts/policy_rounds")
-    rounds_data = response.get("data", [])
-
-    # Verify that rounds_data is a list before iterating
-    if not isinstance(rounds_data, list):
-        # If it's not a list, log and return empty list
-        print(
-            f"Warning: Expected a list for policy rounds but got: {type(rounds_data)}"
-        )
+    
+    try:
+        # Validate response against expected schema
+        policy_response = MonetaryPolicyResponse(data=response.get("data", []))
+        rounds_data = policy_response.data
+        
+        # Process the data into PolicyRound objects
+        result = []
+        for round_data in rounds_data:
+            if isinstance(round_data, dict):
+                result.append(
+                    PolicyRound(
+                        id=round_data.get("id", ""),
+                        date=round_data.get("date", ""),
+                        description=round_data.get("description")
+                    )
+                )
+            else:
+                # Handle the case where it's just a string
+                result.append(
+                    PolicyRound(
+                        id=str(round_data),
+                        date="",
+                        description=None
+                    )
+                )
+        return result
+    except Exception as e:
+        logger.error(f"Error processing policy rounds: {e}")
         return []
 
-    return [
-        PolicyRound(
-            id=(
-                round_data.get("id", "")
-                if isinstance(round_data, dict)
-                else str(round_data)
-            ),
-            date=round_data.get("date", "") if isinstance(round_data, dict) else "",
-            description=(
-                round_data.get("description", None)
-                if isinstance(round_data, dict)
-                else None
-            ),
-        )
-        for round_data in rounds_data
-    ]
 
-
-async def list_series_ids() -> list[SeriesInfo]:
+async def list_series_ids() -> List[SeriesInfo]:
     """
     List all available series IDs for forecasts from the Riksbank.
 
@@ -58,7 +74,7 @@ async def list_series_ids() -> list[SeriesInfo]:
     Monetary Policy API, including identifiers, names, and descriptions.
 
     Returns:
-        list[SeriesInfo]: A list of series information objects with metadata.
+        List[SeriesInfo]: A list of series information objects with metadata.
 
     Example:
         >>> series_list = await list_series_ids()
@@ -66,26 +82,38 @@ async def list_series_ids() -> list[SeriesInfo]:
         ...     print(f"{series.id}: {series.name}")
     """
     response = await riksbanken_request("forecasts/series_ids")
-    series_data = response.get("data", [])
-
-    # Verify that series_data is a list before iterating
-    if not isinstance(series_data, list):
-        print(f"Warning: Expected a list for series_ids but got: {type(series_data)}")
+    
+    try:
+        # Validate response against expected schema
+        policy_response = MonetaryPolicyResponse(data=response.get("data", []))
+        series_data = policy_response.data
+        
+        # Process the data into SeriesInfo objects
+        result = []
+        for series in series_data:
+            if isinstance(series, dict):
+                metadata = {
+                    k: v for k, v in series.items() 
+                    if k not in ["series_id", "name", "description", "unit"]
+                }
+                
+                result.append(
+                    SeriesInfo(
+                        id=series.get("series_id", ""),
+                        name=series.get("name", ""),
+                        description=series.get("description"),
+                        unit=series.get("unit"),
+                        metadata=metadata if metadata else None
+                    )
+                )
+        return result
+    except Exception as e:
+        logger.error(f"Error processing series IDs: {e}")
         return []
-
-    return [
-        SeriesInfo(
-            id=series.get("series_id", ""),  # Changed from "id" to "series_id"
-            name=series.get("name", ""),
-            description=series.get("description", None),
-            unit=series.get("unit", None),
-        )
-        for series in series_data
-    ]
 
 
 async def get_forecast_data(
-    series_id: str, policy_round: str | None = None
+    series_id: str, policy_round: Optional[str] = None
 ) -> ForecastResult:
     """
     Fetch forecast data for a given series from the Riksbank Monetary Policy API.
@@ -105,28 +133,57 @@ async def get_forecast_data(
         >>> for obs in result.observations:
         ...     print(f"{obs.date}: {obs.value}")
     """
-    params = {"series": series_id}
+    params: Dict[str, str] = {"series": series_id}
     if policy_round:
         params["policy_round_name"] = policy_round
 
     response = await riksbanken_request("forecasts", params)
-    raw_items = response.get("data", [])
-    observations: list[Observation] = []
+    
+    try:
+        # Validate response against expected schema
+        policy_response = MonetaryPolicyResponse(data=response.get("data", []))
+        raw_items = policy_response.data
+        
+        # Process the data into ForecastSeries objects
+        observations: List[Observation] = []
+        
+        for series_item in raw_items:
+            if not isinstance(series_item, dict):
+                continue
+                
+            # Extract observations from each vintage's observations array
+            for vintage in series_item.get("vintages", []):
+                if not isinstance(vintage, dict):
+                    continue
+                    
+                for obs_item in vintage.get("observations", []):
+                    if not isinstance(obs_item, dict):
+                        continue
+                        
+                    try:
+                        # Ensure value is a number
+                        value = obs_item.get("value")
+                        if value == "":  # Handle empty string values
+                            value = 0.0
+                        else:
+                            value = float(value)
+                            
+                        observations.append(
+                            Observation(
+                                date=obs_item.get("dt", ""),  # Use "dt" for date
+                                value=value,
+                            )
+                        )
+                    except (ValueError, TypeError) as e:
+                        logger.warning(f"Invalid observation value: {e}")
+                        continue
 
-    for series_item in raw_items:
-        # Extract observations from each vintage's observations array
-        for vintage in series_item.get("vintages", []):
-            for obs_item in vintage.get("observations", []):
-                observations.append(
-                    Observation(
-                        date=obs_item.get("dt", ""),  # Use "dt" for date
-                        value=float(obs_item.get("value", 0.0)),
-                    )
-                )
-
-    return ForecastResult(
-        series_id=series_id, policy_round=policy_round, observations=observations
-    )
+        return ForecastResult(
+            series_id=series_id, policy_round=policy_round, observations=observations
+        )
+    except Exception as e:
+        logger.error(f"Error processing forecast data: {e}")
+        return ForecastResult(series_id=series_id, policy_round=policy_round, observations=[])
 
 
 async def get_gdp_data(policy_round: str | None = None) -> ForecastResult:

@@ -3,14 +3,22 @@ Monetary Policy API helper functions for interacting with the Riksbank's Monetar
 """
 
 import asyncio
-from typing import Any
+import logging
+from typing import Any, Dict, Optional
 
 import httpx
 
+from riksbank_mcp.openapi import MONETARY_POLICY_SPEC
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+# Extract base URL from the OpenAPI spec
+BASE_URL = MONETARY_POLICY_SPEC["servers"][0]["url"]
 
 async def riksbanken_request(
-    endpoint: str, params: dict[str, Any] | None = None, retries: int = 5
-) -> dict[str, Any]:
+    endpoint: str, params: Optional[Dict[str, Any]] = None, retries: int = 5
+) -> Dict[str, Any]:
     """
     Make a request to the Riksbank Monetary Policy API with automatic retries for 429 errors.
 
@@ -25,12 +33,12 @@ async def riksbanken_request(
     Raises:
         HTTPStatusError if the request fails after all retries
     """
-    base_url = "https://api.riksbank.se/monetary_policy_data/v1"
-    url = f"{base_url}/{endpoint}"
+    url = f"{BASE_URL}/{endpoint}"
 
     async with httpx.AsyncClient() as client:
         for attempt in range(retries):
             try:
+                logger.debug(f"Making request to {url} with params {params}")
                 response = await client.get(url, params=params)
                 response.raise_for_status()
                 # Only try to decode JSON if we have content
@@ -41,10 +49,10 @@ async def riksbanken_request(
                 if response.status_code == 429 and attempt < retries - 1:
                     # Wait with exponential backoff
                     wait_seconds = 2 ** attempt  # 1, 2, 4, 8, 16 seconds
-                    print(f"Rate limited (429). Retrying in {wait_seconds} second(s)...")
+                    logger.warning(f"Rate limited (429). Retrying in {wait_seconds} second(s)...")
                     await asyncio.sleep(wait_seconds)
                     continue
                 else:
-                    print(f"Request failed after {attempt+1} attempts for endpoint: {endpoint}")
+                    logger.error(f"Request failed after {attempt+1} attempts for endpoint: {endpoint}")
                     raise
         raise Exception(f"Max retries exceeded for URL: {url}")
