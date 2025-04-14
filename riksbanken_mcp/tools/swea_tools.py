@@ -4,8 +4,8 @@ Tools for working with the Riksbank's SWEA data.
 
 from datetime import date
 
-from riksbanken_mcp.models import ExchangeRateData, InterestRateData, Observation
-from riksbanken_mcp.services.swea_api import swea_request
+from riksbank_mcp.models import ExchangeRateData, InterestRateData, Observation
+from riksbank_mcp.services.swea_api import swea_request
 
 
 async def fetch_observations(

@@ -5,7 +5,7 @@ MCP Server for Riksbank data (monetary policy, SWEA, SWESTR).
 from contextlib import asynccontextmanager
 
 from mcp.server import FastMCP
-from riksbanken_mcp.tools.monetary_policy_tools import (
+from riksbank_mcp.tools.monetary_policy_tools import (
     get_cpi_data,
     get_cpif_data,
     get_cpif_ex_energy_data,
@@ -22,14 +22,14 @@ from riksbanken_mcp.tools.monetary_policy_tools import (
     list_policy_rounds,
     list_series_ids,
 )
-from riksbanken_mcp.tools.swea_tools import (
+from riksbank_mcp.tools.swea_tools import (
     get_eur_exchange_rate,
     get_gbp_exchange_rate,
     get_mortgage_rate,
     get_policy_rate,
     get_usd_exchange_rate,
 )
-from riksbanken_mcp.tools.swestr_tools import (
+from riksbank_mcp.tools.swestr_tools import (
     get_latest_swestr,
     get_swestr,
     get_swestr_1month,

@@ -46,7 +46,7 @@ riksbanken-mcp
 Alternatively, run the server directly using:
 
 ```bash
-python -m riksbanken_mcp.server
+python -m riksbank_mcp.server
 ```
 
 The server uses the stdio transport to communicate and registers all MCP tools.
@@ -54,7 +54,7 @@ The server uses the stdio transport to communicate and registers all MCP tools.
 ## Repository Structure
 
 ```
-riksbanken_mcp/
+riksbank_mcp/
 ├── __init__.py             # Package version and initialization
 ├── server.py               # Main MCP server entry point and tool registration
 ├── models.py               # Pydantic models for API responses and data validation
@@ -77,7 +77,7 @@ riksbanken_mcp/
 
 ```python
 import asyncio
-from riksbanken_mcp.tools.monetary_policy_tools import get_gdp_data
+from riksbank_mcp.tools.monetary_policy_tools import get_gdp_data
 
 async def main():
     # Retrieve forecast data for GDP for a specific policy round.
@@ -92,7 +92,7 @@ asyncio.run(main())
 
 ```python
 import asyncio
-from riksbanken_mcp.tools.swestr_tools import get_latest_swestr
+from riksbank_mcp.tools.swestr_tools import get_latest_swestr
 
 async def main():
     latest = await get_latest_swestr()
@@ -105,7 +105,7 @@ asyncio.run(main())
 
 ```python
 import asyncio
-from riksbanken_mcp.tools.swea_tools import get_usd_exchange_rate
+from riksbank_mcp.tools.swea_tools import get_usd_exchange_rate
 
 async def main():
     usd_data = await get_usd_exchange_rate()

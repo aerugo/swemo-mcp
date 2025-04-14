@@ -2,8 +2,8 @@
 Tools for working with the Riksbank's Monetary Policy data.
 """
 
-from riksbanken_mcp.models import ForecastResult, Observation, PolicyRound, SeriesInfo
-from riksbanken_mcp.services.monetary_policy_api import riksbanken_request
+from riksbank_mcp.models import ForecastResult, Observation, PolicyRound, SeriesInfo
+from riksbank_mcp.services.monetary_policy_api import riksbanken_request
 
 
 async def list_policy_rounds() -> list[PolicyRound]:
@@ -71,6 +71,21 @@ async def get_forecast_data(
 
     Retrieves all forecast vintages for the specified series ID. Optionally,
     if a policy_round is provided, only the vintages matching that round are returned.
+
+    Available series IDs can be obtained using the `list_series_ids` function.
+    Some common series IDs include:
+    - "GDP": Gross Domestic Product
+    - "SEQLABUEASA": Unemployment rate (seasonally adjusted)
+    - "SECPIYRCA": Consumer Price Index (CPI)
+    - "SECPIFYRCA": CPIF (CPI with fixed interest rate)
+    - "SECPIFXEYRCA": CPIF excluding energy
+    - "SEHLCYRCA": Hourly labour cost
+    - "SEHWNAYRCA": Hourly wage (National Accounts)
+    - "SEHWNMOYRCA": Hourly wage (National Mediation Office)
+    - "SEKIXYRCA": Nominal exchange rate (KIX)
+    - "SEPOPYRCA": Population
+    - "SEEMPYRCA": Employed persons
+    - "SELABFYRCA": Labour force
 
     Args:
         series_id (str): The unique identifier for the economic series (e.g. "GDP").

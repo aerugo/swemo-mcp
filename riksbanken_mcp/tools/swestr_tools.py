@@ -4,8 +4,8 @@ Tools for working with the Riksbank's SWESTR data.
 
 from datetime import date
 
-from riksbanken_mcp.models import InterestRateData, Observation
-from riksbanken_mcp.services.swestr_api import swestr_request
+from riksbank_mcp.models import InterestRateData, Observation
+from riksbank_mcp.services.swestr_api import swestr_request
 
 
 async def fetch_interest_rate(
