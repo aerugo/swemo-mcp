@@ -5,7 +5,6 @@ Tools for working with the Riksbank's SWEA data.
 from datetime import date
 
 from pydantic import BaseModel, Field
-
 from riksbank_mcp.models import (
     CalendarDay,
     CrossRate,
@@ -200,16 +199,15 @@ async def get_mortgage_rate(
 
 
 async def get_calendar_days(
-    from_date: date,
-    to_date: date | None = None
+    from_date: date, to_date: date | None = None
 ) -> list[CalendarDay]:
     """
     Retrieve calendar days information from the SWEA API.
-    
+
     Args:
         from_date: Start date for the query
         to_date: Optional end date for the query
-        
+
     Returns:
         List of CalendarDay objects
     """
@@ -223,20 +221,17 @@ async def get_calendar_days(
 
 
 async def get_cross_rates(
-    series_id1: str,
-    series_id2: str,
-    from_date: date,
-    to_date: date | None = None
+    series_id1: str, series_id2: str, from_date: date, to_date: date | None = None
 ) -> list[CrossRate]:
     """
     Retrieve cross rates between two currency series.
-    
+
     Args:
         series_id1: First currency series ID
         series_id2: Second currency series ID
         from_date: Start date for the query
         to_date: Optional end date for the query
-        
+
     Returns:
         List of CrossRate objects
     """
@@ -254,18 +249,18 @@ async def get_cross_rate_aggregates(
     series_id2: str,
     aggregation: str,
     from_date: date,
-    to_date: date | None = None
+    to_date: date | None = None,
 ) -> list[CrossRateAggregate]:
     """
     Retrieve aggregated cross rates between two currency series.
-    
+
     Args:
         series_id1: First currency series ID
         series_id2: Second currency series ID
         aggregation: Aggregation type (e.g., 'Monthly', 'Quarterly', 'Yearly')
         from_date: Start date for the query
         to_date: Optional end date for the query
-        
+
     Returns:
         List of CrossRateAggregate objects
     """
@@ -283,6 +278,7 @@ class ObservationAggregate(BaseModel):
     Represents an aggregated observation (e.g. monthly, quarterly),
     as returned by the SWEA API /ObservationAggregates endpoints.
     """
+
     year: int
     seqNr: int
     from_: str = Field(..., alias="from")
@@ -295,24 +291,23 @@ class ObservationAggregate(BaseModel):
 
 
 async def get_observation_aggregates(
-    series_id: str,
-    aggregation: str,
-    from_date: date,
-    to_date: date | None = None
+    series_id: str, aggregation: str, from_date: date, to_date: date | None = None
 ) -> list[ObservationAggregate]:
     """
     Retrieve aggregated observations for a specific series.
-    
+
     Args:
         series_id: The series ID to query
         aggregation: Aggregation type (e.g., 'Monthly', 'Quarterly', 'Yearly')
         from_date: Start date for the query
         to_date: Optional end date for the query
-        
+
     Returns:
         List of ObservationAggregate objects
     """
-    endpoint = f"ObservationAggregates/{series_id}/{aggregation}/{from_date.isoformat()}"
+    endpoint = (
+        f"ObservationAggregates/{series_id}/{aggregation}/{from_date.isoformat()}"
+    )
     if to_date:
         endpoint += f"/{to_date.isoformat()}"
     response = await swea_request(endpoint)
@@ -324,10 +319,10 @@ async def get_observation_aggregates(
 async def get_latest_observation(series_id: str) -> Observation | None:
     """
     Retrieve the latest observation for a specific series.
-    
+
     Args:
         series_id: The series ID to query
-        
+
     Returns:
         An Observation object or None if no data is available
     """
@@ -336,18 +331,17 @@ async def get_latest_observation(series_id: str) -> Observation | None:
     if not response:
         return None
     return Observation(
-        date=response.get("date", ""),
-        value=float(response.get("value", 0.0))
+        date=response.get("date", ""), value=float(response.get("value", 0.0))
     )
 
 
 async def list_groups(language: str = "en") -> dict:
     """
     List all available groups in the SWEA API.
-    
+
     Args:
         language: Language code for the response (default: "en")
-        
+
     Returns:
         Dictionary containing group information
     """
@@ -359,11 +353,11 @@ async def list_groups(language: str = "en") -> dict:
 async def get_group_details(group_id: int, language: str = "en") -> dict:
     """
     Get details for a specific group.
-    
+
     Args:
         group_id: The ID of the group to query
         language: Language code for the response (default: "en")
-        
+
     Returns:
         Dictionary containing group details
     """
@@ -376,10 +370,10 @@ async def get_group_details(group_id: int, language: str = "en") -> dict:
 async def list_series(language: str = "en") -> list:
     """
     List all available series in the SWEA API.
-    
+
     Args:
         language: Language code for the response (default: "en")
-        
+
     Returns:
         List of series information
     """
@@ -393,11 +387,11 @@ async def list_series(language: str = "en") -> list:
 async def get_series_info(series_id: str, language: str = "en") -> dict | None:
     """
     Get information about a specific series.
-    
+
     Args:
         series_id: The ID of the series to query
         language: Language code for the response (default: "en")
-        
+
     Returns:
         Dictionary containing series information or None if not found
     """
@@ -410,10 +404,10 @@ async def get_series_info(series_id: str, language: str = "en") -> dict | None:
 async def list_exchange_rate_series(language: str = "en") -> list:
     """
     List all available exchange rate series in the SWEA API.
-    
+
     Args:
         language: Language code for the response (default: "en")
-        
+
     Returns:
         List of exchange rate series information
     """
