@@ -11,7 +11,7 @@ import httpx
 
 
 async def swea_request(
-    endpoint: str, params: dict[str, Any] | None = None, retries: int = 3
+    endpoint: str, params: dict[str, Any] | None = None, retries: int = 5
 ) -> dict[str, Any]:
     """
     Make a request to the Riksbank SWEA API with automatic retries for 429 errors.
@@ -19,7 +19,7 @@ async def swea_request(
     Args:
         endpoint: The API endpoint to call
         params: Optional query parameters
-        retries: Number of retries on a 429 error
+        retries: Number of retries on a 429 error. Default is 5.
 
     Returns:
         The JSON response from the API
@@ -42,7 +42,7 @@ async def swea_request(
             except httpx.HTTPStatusError as exc:
                 if response.status_code == 429 and attempt < retries - 1:
                     # Wait with exponential backoff
-                    wait_seconds = 1 * (2 ** attempt)  # 1, 2, 4, 8... seconds
+                    wait_seconds = 2 ** attempt  # 1, 2, 4, 8, 16 seconds
                     print(f"Rate limited (429). Retrying in {wait_seconds} second(s)...")
                     await asyncio.sleep(wait_seconds)
                     continue
