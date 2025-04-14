@@ -3,6 +3,9 @@ MCP Server for Riksbank data (monetary policy, SWEA, SWESTR).
 """
 
 from contextlib import asynccontextmanager
+from typing import Any, AsyncIterator, Dict
+import sys
+import traceback
 
 from mcp.server import FastMCP
 from riksbank_mcp.tools.monetary_policy_tools import (
@@ -39,10 +42,25 @@ from riksbank_mcp.tools.swestr_tools import (
 
 
 @asynccontextmanager
-async def app_lifespan():
-    # Setup code here (if needed)
-    yield
-    # Cleanup code here (if needed)
+async def app_lifespan(server: FastMCP) -> AsyncIterator[Dict[str, Any]]:
+    print("[Riksbank MCP Lifespan] Starting lifespan setup...", file=sys.stderr)
+
+    # (Optional) Pre-fetch or initialize Riksbank-specific resources here.
+    context_data: Dict[str, Any] = {}  # Populate with any needed data
+
+    print("[Riksbank MCP Lifespan] Initialization complete. All data cached.", file=sys.stderr)
+    print("[Riksbank MCP Lifespan] Yielding context...", file=sys.stderr)
+
+    try:
+        yield context_data
+        print("[Riksbank MCP Lifespan] Post-yield (server shutting down)...", file=sys.stderr)
+    except Exception as e:
+        print(f"[Riksbank MCP Lifespan] Exception DURING yield/server run?: {e}", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        raise
+    finally:
+        print("[Riksbank MCP Lifespan] Entering finally block (shutdown).", file=sys.stderr)
+        print("[Riksbank MCP] Shutting down.", file=sys.stderr)
 
 
 mcp = FastMCP(
@@ -88,7 +106,18 @@ def main() -> None:
     """
     Main entry point for the Riksbanken MCP server.
     """
-    mcp.run("stdio")
+    import sys
+    import traceback
+
+    print("[Riksbank MCP] Starting server on stdio...", file=sys.stderr)
+    try:
+        mcp.run("stdio")
+        print("[Riksbank MCP] Finished cleanly.", file=sys.stderr)
+    except Exception as e:
+        print(f"[Riksbank MCP] EXCEPTION: {e}", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+    finally:
+        print("[Riksbank MCP] Exiting.", file=sys.stderr)
 
 
 if __name__ == "__main__":
