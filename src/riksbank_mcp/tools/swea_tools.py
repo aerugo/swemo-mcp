@@ -5,6 +5,7 @@ Tools for working with the Riksbank's SWEA data.
 from __future__ import annotations
 
 from datetime import date
+from typing import Any
 
 from pydantic import BaseModel, Field
 from riksbank_mcp.models import (
@@ -340,7 +341,7 @@ async def get_latest_observation(series_id: str) -> Observation | None:
     )
 
 
-async def list_groups(language: str = "en") -> dict:
+async def list_groups(language: str = "en") -> dict[str, Any]:
     """
     List all available groups in the SWEA API.
 
@@ -355,7 +356,7 @@ async def list_groups(language: str = "en") -> dict:
     return response or {}
 
 
-async def get_group_details(group_id: int, language: str = "en") -> dict:
+async def get_group_details(group_id: int, language: str = "en") -> dict[str, Any]:
     """
     Get details for a specific group.
 
@@ -372,7 +373,7 @@ async def get_group_details(group_id: int, language: str = "en") -> dict:
     return response or {}
 
 
-async def list_series(language: str = "en") -> list:
+async def list_series(language: str = "en") -> list[dict[str, Any]]:
     """
     List all available series in the SWEA API.
 
@@ -389,7 +390,7 @@ async def list_series(language: str = "en") -> list:
     return response
 
 
-async def get_series_info(series_id: str, language: str = "en") -> dict | None:
+async def get_series_info(series_id: str, language: str = "en") -> dict[str, Any] | None:
     """
     Get information about a specific series.
 
@@ -406,7 +407,7 @@ async def get_series_info(series_id: str, language: str = "en") -> dict | None:
     return response if response else None
 
 
-async def list_exchange_rate_series(language: str = "en") -> list:
+async def list_exchange_rate_series(language: str = "en") -> list[dict[str, Any]]:
     """
     List all available exchange rate series in the SWEA API.
 
