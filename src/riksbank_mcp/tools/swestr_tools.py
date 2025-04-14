@@ -24,35 +24,27 @@ async def fetch_interest_rate(
     Returns:
         List[Observation]: A list of observations with date and value.
     """
-    base_url = "https://api.riksbank.se/swestr/v1/rates"
+    endpoint = "rates"
     params: Dict[str, str] = {"from": from_date.isoformat()}
     if to_date:
         params["to"] = to_date.isoformat()
 
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(base_url, params=params)
-            response.raise_for_status()
-            data = response.json()
-            
-            observations = []
-            for item in data.get("data", []):
-                if isinstance(item, dict) and "date" in item and "value" in item:
-                    observations.append(
-                        Observation(
-                            date=item["date"],
-                            value=float(item["value"])
-                        )
+    try:
+        data = await swestr_request(endpoint, params)
+        
+        observations = []
+        for item in data.get("data", []):
+            if isinstance(item, dict) and "date" in item and "value" in item:
+                observations.append(
+                    Observation(
+                        date=item["date"],
+                        value=float(item["value"])
                     )
-            return observations
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 404:
-                # No data available for the specified period
-                return []
-            raise
-        except Exception as e:
-            print(f"Error fetching SWESTR data: {e}")
-            return []
+                )
+        return observations
+    except Exception as e:
+        print(f"Error fetching SWESTR data: {e}")
+        return []
 
 
 async def get_swestr(
@@ -93,25 +85,22 @@ async def get_latest_swestr() -> Optional[Observation]:
         >>> if latest:
         ...     print(f"Latest SWESTR ({latest.date}): {latest.value}%")
     """
-    base_url = "https://api.riksbank.se/swestr/v1/rates/latest"
+    endpoint = "rates/latest"
     
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(base_url)
-            response.raise_for_status()
-            data = response.json()
-            
-            if "data" in data and data["data"]:
-                item = data["data"]
-                if "date" in item and "value" in item:
-                    return Observation(
-                        date=item["date"],
-                        value=float(item["value"])
-                    )
-            return None
-        except Exception as e:
-            print(f"Error fetching latest SWESTR: {e}")
-            return None
+    try:
+        data = await swestr_request(endpoint)
+        
+        if "data" in data and data["data"]:
+            item = data["data"]
+            if "date" in item and "value" in item:
+                return Observation(
+                    date=item["date"],
+                    value=float(item["value"])
+                )
+        return None
+    except Exception as e:
+        print(f"Error fetching latest SWESTR: {e}")
+        return None
 
 
 async def get_swestr_averages(
@@ -136,30 +125,27 @@ async def get_swestr_averages(
         >>> for obs in averages.observations:
         ...     print(f"{obs.date}: {obs.value}%")
     """
-    base_url = "https://api.riksbank.se/swestr/v1/averages"
+    endpoint = "averages"
     params = {"from": from_date.isoformat()}
     if to_date:
         params["to"] = to_date.isoformat()
 
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(base_url, params=params)
-            response.raise_for_status()
-            data = response.json()
-            
-            observations = []
-            for item in data.get("data", []):
-                if isinstance(item, dict) and "date" in item and "value" in item:
-                    observations.append(
-                        Observation(
-                            date=item["date"],
-                            value=float(item["value"])
-                        )
+    try:
+        data = await swestr_request(endpoint, params)
+        
+        observations = []
+        for item in data.get("data", []):
+            if isinstance(item, dict) and "date" in item and "value" in item:
+                observations.append(
+                    Observation(
+                        date=item["date"],
+                        value=float(item["value"])
                     )
-            return InterestRateData(observations=observations)
-        except Exception as e:
-            print(f"Error fetching SWESTR averages: {e}")
-            return InterestRateData(observations=[])
+                )
+        return InterestRateData(observations=observations)
+    except Exception as e:
+        print(f"Error fetching SWESTR averages: {e}")
+        return InterestRateData(observations=[])
 
 
 async def get_swestr_1week(
@@ -184,30 +170,27 @@ async def get_swestr_1week(
         >>> for obs in one_week.observations:
         ...     print(f"{obs.date}: {obs.value}%")
     """
-    base_url = "https://api.riksbank.se/swestr/v1/averages/1week"
+    endpoint = "averages/1week"
     params = {"from": from_date.isoformat()}
     if to_date:
         params["to"] = to_date.isoformat()
 
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(base_url, params=params)
-            response.raise_for_status()
-            data = response.json()
-            
-            observations = []
-            for item in data.get("data", []):
-                if isinstance(item, dict) and "date" in item and "value" in item:
-                    observations.append(
-                        Observation(
-                            date=item["date"],
-                            value=float(item["value"])
-                        )
+    try:
+        data = await swestr_request(endpoint, params)
+        
+        observations = []
+        for item in data.get("data", []):
+            if isinstance(item, dict) and "date" in item and "value" in item:
+                observations.append(
+                    Observation(
+                        date=item["date"],
+                        value=float(item["value"])
                     )
-            return InterestRateData(observations=observations)
-        except Exception as e:
-            print(f"Error fetching 1-week SWESTR averages: {e}")
-            return InterestRateData(observations=[])
+                )
+        return InterestRateData(observations=observations)
+    except Exception as e:
+        print(f"Error fetching 1-week SWESTR averages: {e}")
+        return InterestRateData(observations=[])
 
 
 async def get_swestr_1month(
@@ -232,27 +215,24 @@ async def get_swestr_1month(
         >>> for obs in one_month.observations:
         ...     print(f"{obs.date}: {obs.value}%")
     """
-    base_url = "https://api.riksbank.se/swestr/v1/averages/1month"
+    endpoint = "averages/1month"
     params = {"from": from_date.isoformat()}
     if to_date:
         params["to"] = to_date.isoformat()
 
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(base_url, params=params)
-            response.raise_for_status()
-            data = response.json()
-            
-            observations = []
-            for item in data.get("data", []):
-                if isinstance(item, dict) and "date" in item and "value" in item:
-                    observations.append(
-                        Observation(
-                            date=item["date"],
-                            value=float(item["value"])
-                        )
+    try:
+        data = await swestr_request(endpoint, params)
+        
+        observations = []
+        for item in data.get("data", []):
+            if isinstance(item, dict) and "date" in item and "value" in item:
+                observations.append(
+                    Observation(
+                        date=item["date"],
+                        value=float(item["value"])
                     )
-            return InterestRateData(observations=observations)
-        except Exception as e:
-            print(f"Error fetching 1-month SWESTR averages: {e}")
-            return InterestRateData(observations=[])
+                )
+        return InterestRateData(observations=observations)
+    except Exception as e:
+        print(f"Error fetching 1-month SWESTR averages: {e}")
+        return InterestRateData(observations=[])
