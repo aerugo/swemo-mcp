@@ -279,6 +279,22 @@ async def get_cross_rate_aggregates(
     return [CrossRateAggregate(**item) for item in response]
 
 
+class ObservationAggregate(BaseModel):
+    """
+    Represents an aggregated observation (e.g. monthly, quarterly),
+    as returned by the SWEA API /ObservationAggregates endpoints.
+    """
+    year: int
+    seqNr: int
+    from_: str = Field(..., alias="from")
+    to: str
+    average: float
+    min: float
+    max: float
+    ultimo: float
+    observationCount: int
+
+
 async def get_observation_aggregates(
     series_id: str,
     aggregation: str,
@@ -408,19 +424,3 @@ async def list_exchange_rate_series(language: str = "en") -> list:
     if not response:
         return []
     return response
-
-
-class ObservationAggregate(BaseModel):
-    """
-    Represents an aggregated observation (e.g. monthly, quarterly),
-    as returned by the SWEA API /ObservationAggregates endpoints.
-    """
-    year: int
-    seqNr: int
-    from_: str = Field(..., alias="from")
-    to: str
-    average: float
-    min: float
-    max: float
-    ultimo: float
-    observationCount: int
