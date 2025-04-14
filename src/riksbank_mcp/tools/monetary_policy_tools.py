@@ -23,18 +23,28 @@ async def list_policy_rounds() -> list[PolicyRound]:
     """
     response = await riksbanken_request("forecasts/policy_rounds")
     rounds_data = response.get("data", [])
-    
+
     # Verify that rounds_data is a list before iterating
     if not isinstance(rounds_data, list):
         # If it's not a list, log and return empty list
-        print(f"Warning: Expected a list for policy rounds but got: {type(rounds_data)}")
+        print(
+            f"Warning: Expected a list for policy rounds but got: {type(rounds_data)}"
+        )
         return []
 
     return [
         PolicyRound(
-            id=round_data.get("id", "") if isinstance(round_data, dict) else str(round_data),
+            id=(
+                round_data.get("id", "")
+                if isinstance(round_data, dict)
+                else str(round_data)
+            ),
             date=round_data.get("date", "") if isinstance(round_data, dict) else "",
-            description=round_data.get("description", None) if isinstance(round_data, dict) else None,
+            description=(
+                round_data.get("description", None)
+                if isinstance(round_data, dict)
+                else None
+            ),
         )
         for round_data in rounds_data
     ]
@@ -57,7 +67,7 @@ async def list_series_ids() -> list[SeriesInfo]:
     """
     response = await riksbanken_request("forecasts/series_ids")
     series_data = response.get("data", [])
-    
+
     # Verify that series_data is a list before iterating
     if not isinstance(series_data, list):
         print(f"Warning: Expected a list for series_ids but got: {type(series_data)}")
