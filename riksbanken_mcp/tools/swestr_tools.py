@@ -42,41 +42,47 @@ async def fetch_interest_rate(from_date: Optional[date] = None, to_date: Optiona
 
 async def get_swestr(from_date: Optional[date] = None, to_date: Optional[date] = None) -> InterestRateData:
     """
-    Get SWESTR interest rate data for a specified period.
-    
-    Retrieves the Swedish krona Short Term Rate (SWESTR) which is the
-    Riksbank's transaction-based reference rate.
+    Retrieve the SWESTR (Swedish krona Short Term Rate) over a specified period.
+
+    SWESTR reflects the actual transaction-based short term rate in the Swedish money market.
     
     Args:
-        from_date (Optional[date]): Optional start date for the data range
-        to_date (Optional[date]): Optional end date for the data range
-        
+        from_date (Optional[date]): Start date for the period.
+        to_date (Optional[date]): End date for the period.
+    
     Returns:
-        InterestRateData: A validated model containing SWESTR rate observations
-        
-    Example:
-        >>> from datetime import date, timedelta
-        >>> end_date = date.today()
-        >>> start_date = end_date - timedelta(days=30)
-        >>> swestr_data = await get_swestr(start_date, end_date)
-        >>> for rate in swestr_data.observations:
-        >>>     print(f"{rate.date}: {rate.value}%")
+        InterestRateData: A model containing SWESTR rate observations.
+    
+    Usage Example:
+        >>> from datetime import date
+        >>> swestr_data = await get_swestr(date(2023, 1, 1))
+        >>> for obs in swestr_data.observations:
+        ...     print(f"Rate on {obs.date} = {obs.value}%")
+    
+    Frequency & Range:
+        - Typically observed daily.
+    
+    Disclaimer:
+        SWESTR is relatively new; use historical trends with caution.
     """
     observations = await fetch_interest_rate(from_date, to_date)
     return InterestRateData(observations=observations)
 
 async def get_latest_swestr() -> Observation:
     """
-    Get the latest published SWESTR interest rate.
-    
-    Retrieves the most recently published SWESTR rate from the Riksbank.
+    Retrieve the latest published SWESTR rate.
+
+    This function returns the most recent SWESTR observation, providing a snapshot of current money market conditions.
     
     Returns:
-        Observation: The latest SWESTR rate with date and value
-        
-    Example:
-        >>> latest = await get_latest_swestr()
-        >>> print(f"Latest SWESTR rate ({latest.date}): {latest.value}%")
+        Observation: A data point containing the date and rate.
+    
+    Usage Example:
+        >>> latest_rate = await get_latest_swestr()
+        >>> print("Latest SWESTR:", latest_rate.date, latest_rate.value)
+    
+    Disclaimer:
+        This is a single-point observation; for trend analysis, refer to the full SWESTR series.
     """
     response = await swestr_request("latest")
     rate_data = response.get("rate", {})
@@ -88,16 +94,24 @@ async def get_latest_swestr() -> Observation:
 
 async def get_swestr_averages(from_date: Optional[date] = None, to_date: Optional[date] = None) -> InterestRateData:
     """
-    Get SWESTR average rates.
-    
-    Retrieves the compounded average rates based on SWESTR.
+    Retrieve compounded SWESTR averages over a specified period.
+
+    These backward-looking averages (covering various periods) smooth out daily volatility 
+    and help in analyzing short-term interest trends.
     
     Args:
-        from_date (Optional[date]): Optional start date for the data range
-        to_date (Optional[date]): Optional end date for the data range
-        
+        from_date (Optional[date]): Start date of the period.
+        to_date (Optional[date]): End date of the period.
+    
     Returns:
-        InterestRateData: A validated model containing SWESTR average rate observations
+        InterestRateData: A model containing aggregated SWESTR average rate observations.
+    
+    Usage Example:
+        >>> swestr_averages = await get_swestr_averages()
+        >>> print("First average entry:", swestr_averages.observations[0])
+    
+    Disclaimer:
+        For specific period averages (e.g., 1-week or 1-month), use the dedicated functions.
     """
     params = {}
     
@@ -118,16 +132,25 @@ async def get_swestr_averages(from_date: Optional[date] = None, to_date: Optiona
 
 async def get_swestr_1week(from_date: Optional[date] = None, to_date: Optional[date] = None) -> InterestRateData:
     """
-    Get 1-week SWESTR average rates.
-    
-    Retrieves the 1-week compounded average rates based on SWESTR.
+    Retrieve the 1-week compounded SWESTR average.
+
+    This average reflects the SEK funding cost compounded over a one-week horizon.
     
     Args:
-        from_date (Optional[date]): Optional start date for the data range
-        to_date (Optional[date]): Optional end date for the data range
-        
+        from_date (Optional[date]): Start date for filtering.
+        to_date (Optional[date]): End date for filtering.
+    
     Returns:
-        InterestRateData: A validated model containing 1-week SWESTR average rate observations
+        InterestRateData: A model containing 1-week SWESTR average observations.
+    
+    Usage Example:
+        >>> from datetime import date
+        >>> one_week_avg = await get_swestr_1week(date(2023,1,1), date(2023,2,1))
+        >>> for obs in one_week_avg.observations:
+        ...     print(f"{obs.date}: {obs.value}%")
+    
+    Disclaimer:
+        Although less volatile than daily rates, 1-week averages may still exhibit short-term shifts.
     """
     params = {"period": "1week"}
     
@@ -148,16 +171,23 @@ async def get_swestr_1week(from_date: Optional[date] = None, to_date: Optional[d
 
 async def get_swestr_1month(from_date: Optional[date] = None, to_date: Optional[date] = None) -> InterestRateData:
     """
-    Get 1-month SWESTR average rates.
-    
-    Retrieves the 1-month compounded average rates based on SWESTR.
+    Retrieve the 1-month compounded SWESTR average.
+
+    The 1-month average smooths daily fluctuations and is used for analyzing monthly monetary conditions.
     
     Args:
-        from_date (Optional[date]): Optional start date for the data range
-        to_date (Optional[date]): Optional end date for the data range
-        
+        from_date (Optional[date]): The inclusive start date.
+        to_date (Optional[date]): The inclusive end date.
+    
     Returns:
-        InterestRateData: A validated model containing 1-month SWESTR average rate observations
+        InterestRateData: A model containing 1-month SWESTR average observations.
+    
+    Usage Example:
+        >>> one_month_avg = await get_swestr_1month()
+        >>> print("Latest 1-month average:", one_month_avg.observations[-1])
+    
+    Disclaimer:
+        Monthly averages may mask short-term volatility; for high-frequency trading, daily rates are preferable.
     """
     params = {"period": "1month"}
     
