@@ -3,7 +3,6 @@ Tools for working with the Riksbank's SWEA data.
 """
 
 from datetime import date
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -202,8 +201,8 @@ async def get_mortgage_rate(
 
 async def get_calendar_days(
     from_date: date,
-    to_date: Optional[date] = None
-) -> List[CalendarDay]:
+    to_date: date | None = None
+) -> list[CalendarDay]:
     """
     Retrieve calendar days information from the SWEA API.
     
@@ -227,8 +226,8 @@ async def get_cross_rates(
     series_id1: str,
     series_id2: str,
     from_date: date,
-    to_date: Optional[date] = None
-) -> List[CrossRate]:
+    to_date: date | None = None
+) -> list[CrossRate]:
     """
     Retrieve cross rates between two currency series.
     
@@ -255,8 +254,8 @@ async def get_cross_rate_aggregates(
     series_id2: str,
     aggregation: str,
     from_date: date,
-    to_date: Optional[date] = None
-) -> List[CrossRateAggregate]:
+    to_date: date | None = None
+) -> list[CrossRateAggregate]:
     """
     Retrieve aggregated cross rates between two currency series.
     
@@ -299,8 +298,8 @@ async def get_observation_aggregates(
     series_id: str,
     aggregation: str,
     from_date: date,
-    to_date: Optional[date] = None
-) -> List[ObservationAggregate]:
+    to_date: date | None = None
+) -> list[ObservationAggregate]:
     """
     Retrieve aggregated observations for a specific series.
     
@@ -322,7 +321,7 @@ async def get_observation_aggregates(
     return [ObservationAggregate(**item) for item in response]
 
 
-async def get_latest_observation(series_id: str) -> Optional[Observation]:
+async def get_latest_observation(series_id: str) -> Observation | None:
     """
     Retrieve the latest observation for a specific series.
     
@@ -391,7 +390,7 @@ async def list_series(language: str = "en") -> list:
     return response
 
 
-async def get_series_info(series_id: str, language: str = "en") -> Optional[dict]:
+async def get_series_info(series_id: str, language: str = "en") -> dict | None:
     """
     Get information about a specific series.
     
