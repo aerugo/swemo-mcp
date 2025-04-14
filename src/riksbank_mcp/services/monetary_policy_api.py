@@ -46,6 +46,9 @@ async def riksbanken_request(
                     return response.json()
                 return {}
             except httpx.HTTPStatusError as exc:
+                if exc.response.status_code == 404:
+                    logger.warning(f"Got 404 at {url}, returning empty response.")
+                    return {}
                 if response.status_code == 429 and attempt < retries - 1:
                     # Wait with exponential backoff
                     wait_seconds = 2 ** attempt  # 1, 2, 4, 8, 16 seconds

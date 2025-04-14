@@ -92,16 +92,15 @@ async def list_series_ids() -> List[SeriesInfo]:
         result = []
         for series in series_data:
             if isinstance(series, dict):
-                metadata = {
-                    k: v for k, v in series.items() 
-                    if k not in ["series_id", "name", "description", "unit"]
-                }
-                
+                metadata = series.get("metadata", {})
+                series_id = series.get("series_id", "")
+                # Use the series "name" if present; otherwise, use the metadata's "description"
+                name_value = series.get("name", "") or metadata.get("description", "")
                 result.append(
                     SeriesInfo(
-                        id=series.get("series_id", ""),
-                        name=series.get("name", ""),
-                        description=series.get("description"),
+                        id=series_id,
+                        name=name_value,
+                        description=series.get("description") or metadata.get("description"),
                         unit=series.get("unit"),
                         metadata=metadata if metadata else None
                     )

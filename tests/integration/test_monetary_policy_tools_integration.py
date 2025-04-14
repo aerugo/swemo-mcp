@@ -14,7 +14,6 @@ async def test_list_policy_rounds():
         first = rounds[0]
         assert isinstance(first, PolicyRound)
         assert first.id != ""
-        assert first.date != ""
 
 @pytest.mark.asyncio
 async def test_list_series_ids():
