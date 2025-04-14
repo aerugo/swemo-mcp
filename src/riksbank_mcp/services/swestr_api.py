@@ -20,7 +20,7 @@ async def swestr_request(
     Returns:
         The JSON response from the API
     """
-    base_url = "https://api.riksbank.se/swestr/api/v1"
+    base_url = "https://api.riksbank.se/swestr/v1"
     url = f"{base_url}/{endpoint}"
 
     async with httpx.AsyncClient() as client:

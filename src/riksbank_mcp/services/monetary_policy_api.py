@@ -20,7 +20,7 @@ async def riksbanken_request(
     Returns:
         The JSON response from the API
     """
-    base_url = "https://api.riksbank.se/monetary_policy_data/api/v1"
+    base_url = "https://api.riksbank.se/monetary_policy_data/v1"
     url = f"{base_url}/{endpoint}"
 
     async with httpx.AsyncClient() as client:

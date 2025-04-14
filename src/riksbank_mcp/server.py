@@ -2,10 +2,10 @@
 MCP Server for Riksbank data (monetary policy, SWEA, SWESTR).
 """
 
-from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Dict
 import sys
 import traceback
+from contextlib import asynccontextmanager
+from typing import Any, AsyncIterator
 
 from mcp.server import FastMCP
 from riksbank_mcp.tools.monetary_policy_tools import (
@@ -42,24 +42,36 @@ from riksbank_mcp.tools.swestr_tools import (
 
 
 @asynccontextmanager
-async def app_lifespan(server: FastMCP) -> AsyncIterator[Dict[str, Any]]:
+async def app_lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
     print("[Riksbank MCP Lifespan] Starting lifespan setup...", file=sys.stderr)
 
     # (Optional) Pre-fetch or initialize Riksbank-specific resources here.
-    context_data: Dict[str, Any] = {}  # Populate with any needed data
+    context_data: dict[str, Any] = {}  # Populate with any needed data
 
-    print("[Riksbank MCP Lifespan] Initialization complete. All data cached.", file=sys.stderr)
+    print(
+        "[Riksbank MCP Lifespan] Initialization complete. All data cached.",
+        file=sys.stderr,
+    )
     print("[Riksbank MCP Lifespan] Yielding context...", file=sys.stderr)
 
     try:
         yield context_data
-        print("[Riksbank MCP Lifespan] Post-yield (server shutting down)...", file=sys.stderr)
+        print(
+            "[Riksbank MCP Lifespan] Post-yield (server shutting down)...",
+            file=sys.stderr,
+        )
     except Exception as e:
-        print(f"[Riksbank MCP Lifespan] Exception DURING yield/server run?: {e}", file=sys.stderr)
+        print(
+            f"[Riksbank MCP Lifespan] Exception DURING yield/server run?: {e}",
+            file=sys.stderr,
+        )
         traceback.print_exc(file=sys.stderr)
         raise
     finally:
-        print("[Riksbank MCP Lifespan] Entering finally block (shutdown).", file=sys.stderr)
+        print(
+            "[Riksbank MCP Lifespan] Entering finally block (shutdown).",
+            file=sys.stderr,
+        )
         print("[Riksbank MCP] Shutting down.", file=sys.stderr)
 
 

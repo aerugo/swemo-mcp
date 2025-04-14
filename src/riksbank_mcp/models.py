@@ -2,7 +2,9 @@
 Pydantic models for Riksbank data validation and documentation.
 """
 
-from pydantic import BaseModel
+from datetime import date
+
+from pydantic import BaseModel, Field
 
 
 class Observation(BaseModel):
@@ -60,3 +62,38 @@ class InterestRateData(BaseModel):
     """
 
     observations: list[Observation]
+
+
+class CalendarDay(BaseModel):
+    """
+    Represents a single calendar date and its properties, as per the
+    SWEA API /CalendarDays endpoints.
+    """
+
+    calendar_date: date = Field(..., alias="calendarDate")
+    swedish_bankday: bool = Field(..., alias="swedishBankday")
+    week_year: int = Field(..., alias="weekYear")
+    week_number: int = Field(..., alias="weekNumber")
+    quarter_number: int = Field(..., alias="quarterNumber")
+    ultimo: bool
+
+
+class CrossRate(BaseModel):
+    """
+    Represents a single cross-rate observation, as returned by
+    the SWEA API /CrossRates endpoints.
+    """
+
+    date: date
+    value: float
+
+
+class CrossRateAggregate(BaseModel):
+    """
+    Represents an aggregated cross-rate observation (e.g. monthly, quarterly),
+    as returned by the SWEA API /CrossRateAggregates endpoints.
+    """
+
+    year: int
+    seqNr: int
+    value: float
