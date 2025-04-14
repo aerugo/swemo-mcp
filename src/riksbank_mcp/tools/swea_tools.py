@@ -3,6 +3,9 @@ Tools for working with the Riksbank's SWEA data.
 """
 
 from datetime import date
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
 
 from riksbank_mcp.models import (
     CalendarDay,
@@ -195,3 +198,229 @@ async def get_mortgage_rate(
     """
     observations = await fetch_observations("MORTGAGE_RATE", from_date, to_date)
     return InterestRateData(observations=observations)
+
+
+async def get_calendar_days(
+    from_date: date,
+    to_date: Optional[date] = None
+) -> List[CalendarDay]:
+    """
+    Retrieve calendar days information from the SWEA API.
+    
+    Args:
+        from_date: Start date for the query
+        to_date: Optional end date for the query
+        
+    Returns:
+        List of CalendarDay objects
+    """
+    endpoint = f"CalendarDays/{from_date.isoformat()}"
+    if to_date:
+        endpoint += f"/{to_date.isoformat()}"
+    response = await swea_request(endpoint)
+    if not response:
+        return []
+    return [CalendarDay(**item) for item in response]
+
+
+async def get_cross_rates(
+    series_id1: str,
+    series_id2: str,
+    from_date: date,
+    to_date: Optional[date] = None
+) -> List[CrossRate]:
+    """
+    Retrieve cross rates between two currency series.
+    
+    Args:
+        series_id1: First currency series ID
+        series_id2: Second currency series ID
+        from_date: Start date for the query
+        to_date: Optional end date for the query
+        
+    Returns:
+        List of CrossRate objects
+    """
+    endpoint = f"CrossRates/{series_id1}/{series_id2}/{from_date.isoformat()}"
+    if to_date:
+        endpoint += f"/{to_date.isoformat()}"
+    response = await swea_request(endpoint)
+    if not response:
+        return []
+    return [CrossRate(**item) for item in response]
+
+
+async def get_cross_rate_aggregates(
+    series_id1: str,
+    series_id2: str,
+    aggregation: str,
+    from_date: date,
+    to_date: Optional[date] = None
+) -> List[CrossRateAggregate]:
+    """
+    Retrieve aggregated cross rates between two currency series.
+    
+    Args:
+        series_id1: First currency series ID
+        series_id2: Second currency series ID
+        aggregation: Aggregation type (e.g., 'Monthly', 'Quarterly', 'Yearly')
+        from_date: Start date for the query
+        to_date: Optional end date for the query
+        
+    Returns:
+        List of CrossRateAggregate objects
+    """
+    endpoint = f"CrossRateAggregates/{series_id1}/{series_id2}/{aggregation}/{from_date.isoformat()}"
+    if to_date:
+        endpoint += f"/{to_date.isoformat()}"
+    response = await swea_request(endpoint)
+    if not response:
+        return []
+    return [CrossRateAggregate(**item) for item in response]
+
+
+async def get_observation_aggregates(
+    series_id: str,
+    aggregation: str,
+    from_date: date,
+    to_date: Optional[date] = None
+) -> List[ObservationAggregate]:
+    """
+    Retrieve aggregated observations for a specific series.
+    
+    Args:
+        series_id: The series ID to query
+        aggregation: Aggregation type (e.g., 'Monthly', 'Quarterly', 'Yearly')
+        from_date: Start date for the query
+        to_date: Optional end date for the query
+        
+    Returns:
+        List of ObservationAggregate objects
+    """
+    endpoint = f"ObservationAggregates/{series_id}/{aggregation}/{from_date.isoformat()}"
+    if to_date:
+        endpoint += f"/{to_date.isoformat()}"
+    response = await swea_request(endpoint)
+    if not response:
+        return []
+    return [ObservationAggregate(**item) for item in response]
+
+
+async def get_latest_observation(series_id: str) -> Optional[Observation]:
+    """
+    Retrieve the latest observation for a specific series.
+    
+    Args:
+        series_id: The series ID to query
+        
+    Returns:
+        An Observation object or None if no data is available
+    """
+    endpoint = f"Observations/Latest/{series_id}"
+    response = await swea_request(endpoint)
+    if not response:
+        return None
+    return Observation(
+        date=response.get("date", ""),
+        value=float(response.get("value", 0.0))
+    )
+
+
+async def list_groups(language: str = "en") -> dict:
+    """
+    List all available groups in the SWEA API.
+    
+    Args:
+        language: Language code for the response (default: "en")
+        
+    Returns:
+        Dictionary containing group information
+    """
+    params = {"language": language}
+    response = await swea_request("groups", params)
+    return response or {}
+
+
+async def get_group_details(group_id: int, language: str = "en") -> dict:
+    """
+    Get details for a specific group.
+    
+    Args:
+        group_id: The ID of the group to query
+        language: Language code for the response (default: "en")
+        
+    Returns:
+        Dictionary containing group details
+    """
+    endpoint = f"Groups/{group_id}"
+    params = {"language": language}
+    response = await swea_request(endpoint, params)
+    return response or {}
+
+
+async def list_series(language: str = "en") -> list:
+    """
+    List all available series in the SWEA API.
+    
+    Args:
+        language: Language code for the response (default: "en")
+        
+    Returns:
+        List of series information
+    """
+    params = {"language": language}
+    response = await swea_request("series", params)
+    if not response:
+        return []
+    return response
+
+
+async def get_series_info(series_id: str, language: str = "en") -> Optional[dict]:
+    """
+    Get information about a specific series.
+    
+    Args:
+        series_id: The ID of the series to query
+        language: Language code for the response (default: "en")
+        
+    Returns:
+        Dictionary containing series information or None if not found
+    """
+    endpoint = f"Series/{series_id}"
+    params = {"language": language}
+    response = await swea_request(endpoint, params)
+    return response if response else None
+
+
+async def list_exchange_rate_series(language: str = "en") -> list:
+    """
+    List all available exchange rate series in the SWEA API.
+    
+    Args:
+        language: Language code for the response (default: "en")
+        
+    Returns:
+        List of exchange rate series information
+    """
+    endpoint = "Series/ExchangeRateSeries"
+    params = {"language": language}
+    response = await swea_request(endpoint, params)
+    if not response:
+        return []
+    return response
+
+
+class ObservationAggregate(BaseModel):
+    """
+    Represents an aggregated observation (e.g. monthly, quarterly),
+    as returned by the SWEA API /ObservationAggregates endpoints.
+    """
+    year: int
+    seqNr: int
+    from_: str = Field(..., alias="from")
+    to: str
+    average: float
+    min: float
+    max: float
+    ultimo: float
+    observationCount: int
