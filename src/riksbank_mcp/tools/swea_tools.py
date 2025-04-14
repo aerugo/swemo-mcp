@@ -390,7 +390,9 @@ async def list_series(language: str = "en") -> list[dict[str, Any]]:
     return response
 
 
-async def get_series_info(series_id: str, language: str = "en") -> dict[str, Any] | None:
+async def get_series_info(
+    series_id: str, language: str = "en"
+) -> dict[str, Any] | None:
     """
     Get information about a specific series.
 
