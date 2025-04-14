@@ -291,6 +291,9 @@ class ObservationAggregate(BaseModel):
     ultimo: float = Field(..., alias="ultimo")
     observationCount: int = Field(..., alias="observationCount")
 
+    class Config:
+        allow_population_by_field_name = True
+
 
 async def get_observation_aggregates(
     series_id: str, aggregation: str, from_date: date, to_date: date | None = None

@@ -79,6 +79,9 @@ class CalendarDay(BaseModel):
     quarter_number: int = Field(..., alias="quarterNumber")
     ultimo: bool
 
+    class Config:
+        allow_population_by_field_name = True
+
 
 class CrossRate(BaseModel):
     """
@@ -99,3 +102,6 @@ class CrossRateAggregate(BaseModel):
     year: int = Field(..., alias="Year")
     seqNr: int = Field(..., alias="SeqNr")
     value: float = Field(..., alias="Value")
+
+    class Config:
+        allow_population_by_field_name = True
