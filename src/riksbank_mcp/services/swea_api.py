@@ -11,7 +11,7 @@ import httpx
 
 
 async def swea_request(
-    endpoint: str, params: dict[str, Any] | None = None, retries: int = 5
+    endpoint: str, params: dict[str, Any] | None = None, retries: int = 7
 ) -> dict[str, Any]:
     """
     Make a request to the Riksbank SWEA API with automatic retries for 429 errors.
