@@ -2,6 +2,8 @@
 Tools for working with the Riksbank's SWEA data.
 """
 
+from __future__ import annotations
+
 from datetime import date
 
 from pydantic import BaseModel, Field
@@ -38,7 +40,7 @@ async def fetch_observations(
         >>> end_date = date(2022, 12, 31)
         >>> observations = await fetch_observations("POLICY_RATE", start_date, end_date)
     """
-    params = {"seriesid": series_id}
+    params: dict[str, str] = {"seriesid": series_id}
 
     if from_date:
         params["from"] = from_date.isoformat()
@@ -345,7 +347,7 @@ async def list_groups(language: str = "en") -> dict:
     Returns:
         Dictionary containing group information
     """
-    params = {"language": language}
+    params: dict[str, str] = {"language": language}
     response = await swea_request("groups", params)
     return response or {}
 
@@ -362,7 +364,7 @@ async def get_group_details(group_id: int, language: str = "en") -> dict:
         Dictionary containing group details
     """
     endpoint = f"Groups/{group_id}"
-    params = {"language": language}
+    params: dict[str, str] = {"language": language}
     response = await swea_request(endpoint, params)
     return response or {}
 
@@ -377,7 +379,7 @@ async def list_series(language: str = "en") -> list:
     Returns:
         List of series information
     """
-    params = {"language": language}
+    params: dict[str, str] = {"language": language}
     response = await swea_request("series", params)
     if not response:
         return []
@@ -396,7 +398,7 @@ async def get_series_info(series_id: str, language: str = "en") -> dict | None:
         Dictionary containing series information or None if not found
     """
     endpoint = f"Series/{series_id}"
-    params = {"language": language}
+    params: dict[str, str] = {"language": language}
     response = await swea_request(endpoint, params)
     return response if response else None
 
@@ -412,7 +414,7 @@ async def list_exchange_rate_series(language: str = "en") -> list:
         List of exchange rate series information
     """
     endpoint = "Series/ExchangeRateSeries"
-    params = {"language": language}
+    params: dict[str, str] = {"language": language}
     response = await swea_request(endpoint, params)
     if not response:
         return []

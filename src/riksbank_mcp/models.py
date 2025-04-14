@@ -2,6 +2,8 @@
 Pydantic models for Riksbank data validation and documentation.
 """
 
+from __future__ import annotations
+
 from datetime import date
 
 from pydantic import BaseModel, Field

@@ -2,6 +2,8 @@
 SWEA API helper functions for interacting with the Riksbank's SWEA API.
 """
 
+from __future__ import annotations
+
 from typing import Any
 
 import httpx
@@ -20,10 +22,10 @@ async def swea_request(
     Returns:
         The JSON response from the API
     """
-    base_url = "https://api.riksbank.se/swea/v1"
-    url = f"{base_url}/{endpoint}"
+    base_url: str = "https://api.riksbank.se/swea/v1"
+    url: str = f"{base_url}/{endpoint}"
 
     async with httpx.AsyncClient() as client:
-        response = await client.get(url, params=params)
+        response: httpx.Response = await client.get(url, params=params)
         response.raise_for_status()
         return response.json()
