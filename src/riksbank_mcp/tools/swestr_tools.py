@@ -7,9 +7,8 @@ from __future__ import annotations
 from datetime import date
 from typing import List, Optional, Dict
 
-import httpx
-
 from riksbank_mcp.models import Observation, InterestRateData
+from riksbank_mcp.services.swestr_api import swestr_request
 
 
 async def fetch_interest_rate(
@@ -25,7 +24,7 @@ async def fetch_interest_rate(
     Returns:
         List[Observation]: A list of observations with date and value.
     """
-    base_url = "https://swestr.riksbank.se/api/v1/rates"
+    base_url = "https://api.riksbank.se/swestr/v1/rates"
     params: Dict[str, str] = {"from": from_date.isoformat()}
     if to_date:
         params["to"] = to_date.isoformat()
@@ -94,7 +93,7 @@ async def get_latest_swestr() -> Optional[Observation]:
         >>> if latest:
         ...     print(f"Latest SWESTR ({latest.date}): {latest.value}%")
     """
-    base_url = "https://swestr.riksbank.se/api/v1/rates/latest"
+    base_url = "https://api.riksbank.se/swestr/v1/rates/latest"
     
     async with httpx.AsyncClient() as client:
         try:
@@ -137,7 +136,7 @@ async def get_swestr_averages(
         >>> for obs in averages.observations:
         ...     print(f"{obs.date}: {obs.value}%")
     """
-    base_url = "https://swestr.riksbank.se/api/v1/averages"
+    base_url = "https://api.riksbank.se/swestr/v1/averages"
     params = {"from": from_date.isoformat()}
     if to_date:
         params["to"] = to_date.isoformat()
@@ -185,7 +184,7 @@ async def get_swestr_1week(
         >>> for obs in one_week.observations:
         ...     print(f"{obs.date}: {obs.value}%")
     """
-    base_url = "https://swestr.riksbank.se/api/v1/averages/1week"
+    base_url = "https://api.riksbank.se/swestr/v1/averages/1week"
     params = {"from": from_date.isoformat()}
     if to_date:
         params["to"] = to_date.isoformat()
@@ -233,7 +232,7 @@ async def get_swestr_1month(
         >>> for obs in one_month.observations:
         ...     print(f"{obs.date}: {obs.value}%")
     """
-    base_url = "https://swestr.riksbank.se/api/v1/averages/1month"
+    base_url = "https://api.riksbank.se/swestr/v1/averages/1month"
     params = {"from": from_date.isoformat()}
     if to_date:
         params["to"] = to_date.isoformat()
