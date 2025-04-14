@@ -79,8 +79,9 @@ class CalendarDay(BaseModel):
     quarter_number: int = Field(..., alias="quarterNumber")
     ultimo: bool
 
-    class Config:
-        allow_population_by_field_name = True
+    model_config = {
+        "populate_by_name": True
+    }
 
 
 class CrossRate(BaseModel):
@@ -136,5 +137,6 @@ class ObservationAggregate(BaseModel):
     ultimo: float
     observation_count: int = Field(..., alias="observationCount")
 
-    class Config:
-        allow_population_by_field_name = True
+    model_config = {
+        "populate_by_name": True
+    }
