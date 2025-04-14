@@ -1,7 +1,3 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
 [project]
 name = "riksbank-mcp"
 version = "0.1.0"
@@ -20,17 +16,9 @@ license = "Apache-2.0"
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.4.0",
-    "pytest-asyncio>=0.21.1",
     "black>=23.7.0",
     "mypy>=1.5.1"
 ]
-
-[project.scripts]
-riksbanken-mcp = "riksbank_mcp.server:main"
-
-[tool.hatch.build.targets.wheel]
-packages = ["riksbank_mcp"]
 
 [tool.black]
 line-length = 88
@@ -42,3 +30,12 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
+
+[project.urls]
+"Homepage" = "https://github.com/aerugo/riksbank-mcp"
+"Bug Tracker" = "https://github.com/aerugo/riksbank-mcp/issues"
+
+[project.scripts]
+riksbank-mcp = "riksbank_mcp:main"
+
+
