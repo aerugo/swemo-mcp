@@ -47,7 +47,7 @@ async def fetch_observations(
     response = await swea_request(endpoint)
     if not response:
         return []
-    return [Observation(**item) for item in response]
+    return [Observation.model_validate(item) for item in response]
 
 
 async def get_policy_rate(
@@ -334,7 +334,7 @@ async def get_latest_observation(series_id: str) -> Observation | None:
     response = await swea_request(endpoint)
     if not response:
         return None
-    return Observation(**response)
+    return Observation.model_validate(response)
 
 
 async def list_groups(language: str = "en") -> dict[str, Any]:
