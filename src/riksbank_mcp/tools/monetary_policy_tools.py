@@ -21,8 +21,8 @@ async def list_policy_rounds() -> list[PolicyRound]:
         >>> for r in rounds:
         ...     print(f"{r.id}: {r.date}")
     """
-    response = await riksbanken_request("policy-rounds")
-    rounds_data = response["policyRounds"]
+    response = await riksbanken_request("forecasts/policy_rounds")
+    rounds_data = response["data"]
 
     return [
         PolicyRound(
@@ -49,8 +49,8 @@ async def list_series_ids() -> list[SeriesInfo]:
         >>> for series in series_list:
         ...     print(f"{series.id}: {series.name}")
     """
-    response = await riksbanken_request("series")
-    series_data = response["series"]
+    response = await riksbanken_request("forecasts/series_ids")
+    series_data = response["data"]
 
     return [
         SeriesInfo(
@@ -84,22 +84,24 @@ async def get_forecast_data(
         >>> for obs in result.observations:
         ...     print(f"{obs.date}: {obs.value}")
     """
-    params = {"seriesid": series_id}
+    params = {"series": series_id}
     if policy_round:
-        params["policyround"] = policy_round
+        params["policy_round_name"] = policy_round
 
     response = await riksbanken_request("forecasts", params)
-    raw_items = response.get("forecasts", [])
+    raw_items = response.get("data", [])
     observations: list[Observation] = []
 
-    for item in raw_items:
-        # Convert API response to Observation model
-        observations.append(
-            Observation(
-                date=item.get("date", item.get("dt", "")),
-                value=float(item.get("value", item.get("val", 0.0))),
+    for series_item in raw_items:
+        # Extract observations from the vintages array
+        if series_item.get("vintages"):
+            vintage = series_item["vintages"][0]  # Use the first vintage
+            observations.append(
+                Observation(
+                    date=vintage.get("date", ""),
+                    value=float(vintage.get("value", 0.0)),
+                )
             )
-        )
 
     return ForecastResult(
         series_id=series_id, policy_round=policy_round, observations=observations
