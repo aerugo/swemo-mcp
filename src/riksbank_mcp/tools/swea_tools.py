@@ -423,4 +423,6 @@ async def list_exchange_rate_series(language: str = "en") -> list[dict[str, Any]
     response = await swea_request(endpoint, params)
     if not response:
         return []
-    return response
+    if isinstance(response, list):
+        return response
+    return []
