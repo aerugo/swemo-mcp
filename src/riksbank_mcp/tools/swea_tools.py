@@ -383,7 +383,10 @@ async def list_series(language: str = "en") -> list[dict[str, Any]]:
     response = await swea_request("series", params)
     if not response:
         return []
-    return response
+    if isinstance(response, list):
+        return response
+    # If the response is not a list, return an empty list.
+    return []
 
 
 async def get_series_info(
