@@ -219,7 +219,7 @@ async def get_calendar_days(
     response = await swea_request(endpoint)
     if not response:
         return []
-    return [CalendarDay.parse_obj(item) for item in response]
+    return [CalendarDay.model_validate(item) for item in response]
 
 
 async def get_cross_rates(
@@ -243,7 +243,7 @@ async def get_cross_rates(
     response = await swea_request(endpoint)
     if not response:
         return []
-    return [CrossRate.parse_obj(item) for item in response]
+    return [CrossRate.model_validate(item) for item in response]
 
 
 async def get_cross_rate_aggregates(
@@ -272,7 +272,7 @@ async def get_cross_rate_aggregates(
     response = await swea_request(endpoint)
     if not response:
         return []
-    return [CrossRateAggregate.parse_obj(item) for item in response]
+    return [CrossRateAggregate.model_validate(item) for item in response]
 
 
 class ObservationAggregate(BaseModel):
@@ -318,7 +318,7 @@ async def get_observation_aggregates(
     response = await swea_request(endpoint)
     if not response:
         return []
-    return [ObservationAggregate.parse_obj(item) for item in response]
+    return [ObservationAggregate.model_validate(item) for item in response]
 
 
 async def get_latest_observation(series_id: str) -> Observation | None:
