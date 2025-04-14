@@ -22,13 +22,19 @@ async def list_policy_rounds() -> list[PolicyRound]:
         ...     print(f"{r.id}: {r.date}")
     """
     response = await riksbanken_request("forecasts/policy_rounds")
-    rounds_data = response["data"]
+    rounds_data = response.get("data", [])
+    
+    # Verify that rounds_data is a list before iterating
+    if not isinstance(rounds_data, list):
+        # If it's not a list, log and return empty list
+        print(f"Warning: Expected a list for policy rounds but got: {type(rounds_data)}")
+        return []
 
     return [
         PolicyRound(
-            id=round_data.get("id", ""),
-            date=round_data.get("date", ""),
-            description=round_data.get("description", None),
+            id=round_data.get("id", "") if isinstance(round_data, dict) else str(round_data),
+            date=round_data.get("date", "") if isinstance(round_data, dict) else "",
+            description=round_data.get("description", None) if isinstance(round_data, dict) else None,
         )
         for round_data in rounds_data
     ]
@@ -50,11 +56,16 @@ async def list_series_ids() -> list[SeriesInfo]:
         ...     print(f"{series.id}: {series.name}")
     """
     response = await riksbanken_request("forecasts/series_ids")
-    series_data = response["data"]
+    series_data = response.get("data", [])
+    
+    # Verify that series_data is a list before iterating
+    if not isinstance(series_data, list):
+        print(f"Warning: Expected a list for series_ids but got: {type(series_data)}")
+        return []
 
     return [
         SeriesInfo(
-            id=series.get("id", ""),
+            id=series.get("series_id", ""),  # Changed from "id" to "series_id"
             name=series.get("name", ""),
             description=series.get("description", None),
             unit=series.get("unit", None),
@@ -93,15 +104,15 @@ async def get_forecast_data(
     observations: list[Observation] = []
 
     for series_item in raw_items:
-        # Extract observations from the vintages array
-        if series_item.get("vintages"):
-            vintage = series_item["vintages"][0]  # Use the first vintage
-            observations.append(
-                Observation(
-                    date=vintage.get("date", ""),
-                    value=float(vintage.get("value", 0.0)),
+        # Extract observations from each vintage's observations array
+        for vintage in series_item.get("vintages", []):
+            for obs_item in vintage.get("observations", []):
+                observations.append(
+                    Observation(
+                        date=obs_item.get("dt", ""),  # Use "dt" for date
+                        value=float(obs_item.get("value", 0.0)),
+                    )
                 )
-            )
 
     return ForecastResult(
         series_id=series_id, policy_round=policy_round, observations=observations
