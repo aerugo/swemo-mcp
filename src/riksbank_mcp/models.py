@@ -96,6 +96,6 @@ class CrossRateAggregate(BaseModel):
     as returned by the SWEA API /CrossRateAggregates endpoints.
     """
 
-    year: int
-    seqNr: int
-    value: float
+    year: int = Field(..., alias="Year")
+    seqNr: int = Field(..., alias="SeqNr")
+    value: float = Field(..., alias="Value")

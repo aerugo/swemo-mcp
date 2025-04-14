@@ -281,15 +281,15 @@ class ObservationAggregate(BaseModel):
     as returned by the SWEA API /ObservationAggregates endpoints.
     """
 
-    year: int
-    seqNr: int
+    year: int = Field(..., alias="Year")
+    seqNr: int = Field(..., alias="SeqNr")
     from_: str = Field(..., alias="from")
-    to: str
-    average: float
-    min: float
-    max: float
-    ultimo: float
-    observationCount: int
+    to: str = Field(..., alias="to")
+    average: float = Field(..., alias="average")
+    min: float = Field(..., alias="min")
+    max: float = Field(..., alias="max")
+    ultimo: float = Field(..., alias="ultimo")
+    observationCount: int = Field(..., alias="observationCount")
 
 
 async def get_observation_aggregates(
