@@ -47,7 +47,6 @@ ___all__ = [
     "get_cpif_yoy_data",
     "get_cpif_ex_energy_index_data",
     "get_nominal_exchange_rate_kix_index_data",
-    "get_nominal_exchange_rate_kix_data",
     "get_population_level_data",
 ]
 

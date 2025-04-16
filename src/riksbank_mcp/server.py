@@ -11,20 +11,29 @@ from mcp.server import FastMCP
 
 from riksbank_mcp.tools.monetary_policy_tools import (
     get_cpi_data,
+    get_cpi_index_data,
+    get_cpi_yoy_data,
     get_cpif_data,
     get_cpif_ex_energy_data,
+    get_cpif_ex_energy_index_data,
+    get_cpif_yoy_data,
     get_employed_persons_data,
     get_gdp_data,
     get_gdp_gap_data,
+    get_gdp_level_ca_data,
+    get_gdp_level_na_data,
+    get_gdp_level_saca_data,
+    get_gdp_yoy_na_data,
+    get_gdp_yoy_sa_data,
     get_general_government_net_lending_data,
     get_hourly_labour_cost_data,
     get_hourly_wage_na_data,
     get_hourly_wage_nmo_data,
     get_labour_force_data,
-    get_nominal_exchange_rate_kix_data,
-    get_policy_data,
+    get_nominal_exchange_rate_kix_index_data,
     get_policy_rate_data,
     get_population_data,
+    get_population_level_data,
     get_unemployment_data,
     list_policy_rounds,
     list_series_ids,
@@ -99,7 +108,6 @@ mcp = FastMCP(
 # Register Monetary Policy tools
 mcp.tool()(list_policy_rounds)  # type: ignore[Context]
 mcp.tool()(list_series_ids)  # type: ignore[Context]
-mcp.tool()(get_policy_data)  # type: ignore[Context]
 mcp.tool()(get_gdp_data)  # type: ignore[Context]
 mcp.tool()(get_unemployment_data)  # type: ignore[Context]
 mcp.tool()(get_cpi_data)  # type: ignore[Context]
@@ -108,10 +116,20 @@ mcp.tool()(get_cpif_ex_energy_data)  # type: ignore[Context]
 mcp.tool()(get_hourly_labour_cost_data)  # type: ignore[Context]
 mcp.tool()(get_hourly_wage_na_data)  # type: ignore[Context]
 mcp.tool()(get_hourly_wage_nmo_data)  # type: ignore[Context]
-mcp.tool()(get_nominal_exchange_rate_kix_data)  # type: ignore[Context]
 mcp.tool()(get_population_data)  # type: ignore[Context]
 mcp.tool()(get_employed_persons_data)  # type: ignore[Context]
 mcp.tool()(get_labour_force_data)  # type: ignore[Context]
+mcp.tool()(get_gdp_level_saca_data)
+mcp.tool()(get_gdp_level_ca_data)
+mcp.tool()(get_gdp_level_na_data)
+mcp.tool()(get_gdp_yoy_sa_data)
+mcp.tool()(get_gdp_yoy_na_data)
+mcp.tool()(get_cpi_index_data)
+mcp.tool()(get_cpi_yoy_data)
+mcp.tool()(get_cpif_yoy_data)
+mcp.tool()(get_cpif_ex_energy_index_data)
+mcp.tool()(get_nominal_exchange_rate_kix_index_data)
+mcp.tool()(get_population_level_data)
 
 # Register SWEA tools
 mcp.tool()(get_policy_rate)  # type: ignore[Context]
