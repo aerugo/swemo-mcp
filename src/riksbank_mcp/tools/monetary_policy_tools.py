@@ -175,7 +175,7 @@ async def get_policy_data(
         return MonetaryPolicyDataResponse(external_id=series_id, vintages=[])
 
     raw = items[0]
-    raw_vintages = raw.get("vintages", [])
+    raw_vintages: list[dict[str, Any]] = raw.get("vintages", [])
     if isinstance(raw_vintages, dict):
         raw_vintages = [raw_vintages]  # type: ignore[assignment]
 

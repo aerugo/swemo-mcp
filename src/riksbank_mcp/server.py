@@ -106,19 +106,19 @@ mcp = FastMCP(
 )
 
 # Register Monetary Policy tools
-mcp.tool()(list_policy_rounds)  # type: ignore[Context]
-mcp.tool()(list_series_ids)  # type: ignore[Context]
-mcp.tool()(get_gdp_data)  # type: ignore[Context]
-mcp.tool()(get_unemployment_data)  # type: ignore[Context]
-mcp.tool()(get_cpi_data)  # type: ignore[Context]
-mcp.tool()(get_cpif_data)  # type: ignore[Context]
-mcp.tool()(get_cpif_ex_energy_data)  # type: ignore[Context]
-mcp.tool()(get_hourly_labour_cost_data)  # type: ignore[Context]
-mcp.tool()(get_hourly_wage_na_data)  # type: ignore[Context]
-mcp.tool()(get_hourly_wage_nmo_data)  # type: ignore[Context]
-mcp.tool()(get_population_data)  # type: ignore[Context]
-mcp.tool()(get_employed_persons_data)  # type: ignore[Context]
-mcp.tool()(get_labour_force_data)  # type: ignore[Context]
+mcp.tool()(list_policy_rounds)
+mcp.tool()(list_series_ids)
+mcp.tool()(get_gdp_data)
+mcp.tool()(get_unemployment_data)
+mcp.tool()(get_cpi_data)
+mcp.tool()(get_cpif_data)
+mcp.tool()(get_cpif_ex_energy_data)
+mcp.tool()(get_hourly_labour_cost_data)
+mcp.tool()(get_hourly_wage_na_data)
+mcp.tool()(get_hourly_wage_nmo_data)
+mcp.tool()(get_population_data)
+mcp.tool()(get_employed_persons_data)
+mcp.tool()(get_labour_force_data)
 mcp.tool()(get_gdp_level_saca_data)
 mcp.tool()(get_gdp_level_ca_data)
 mcp.tool()(get_gdp_level_na_data)
@@ -132,35 +132,35 @@ mcp.tool()(get_nominal_exchange_rate_kix_index_data)
 mcp.tool()(get_population_level_data)
 
 # Register SWEA tools
-mcp.tool()(get_policy_rate)  # type: ignore[Context]
-mcp.tool()(get_usd_exchange_rate)  # type: ignore[Context]
-mcp.tool()(get_eur_exchange_rate)  # type: ignore[Context]
-mcp.tool()(get_gbp_exchange_rate)  # type: ignore[Context]
-mcp.tool()(get_mortgage_rate)  # type: ignore[Context]
+mcp.tool()(get_policy_rate)
+mcp.tool()(get_usd_exchange_rate)
+mcp.tool()(get_eur_exchange_rate)
+mcp.tool()(get_gbp_exchange_rate)
+mcp.tool()(get_mortgage_rate)
 
 # Register SWESTR tools
-mcp.tool()(get_swestr)  # type: ignore[Context]
-mcp.tool()(get_latest_swestr)  # type: ignore[Context]
-mcp.tool()(get_swestr_averages)  # type: ignore[Context]
-mcp.tool()(get_swestr_1week)  # type: ignore[Context]
-mcp.tool()(get_swestr_1month)  # type: ignore[Context]
+mcp.tool()(get_swestr)
+mcp.tool()(get_latest_swestr)
+mcp.tool()(get_swestr_averages)
+mcp.tool()(get_swestr_1week)
+mcp.tool()(get_swestr_1month)
 
 # --- Additional SWEA Tools ---
-mcp.tool()(get_observation_aggregates)  # type: ignore[Context]
-mcp.tool()(get_latest_observation)  # type: ignore[Context]
-mcp.tool()(get_calendar_days)  # type: ignore[Context]
-mcp.tool()(get_cross_rates)  # type: ignore[Context]
-mcp.tool()(get_cross_rate_aggregates)  # type: ignore[Context]
-mcp.tool()(list_groups)  # type: ignore[Context]
-mcp.tool()(get_group_details)  # type: ignore[Context]
-mcp.tool()(list_series)  # type: ignore[Context]
-mcp.tool()(get_series_info)  # type: ignore[Context]
-mcp.tool()(list_exchange_rate_series)  # type: ignore[Context]
+mcp.tool()(get_observation_aggregates)
+mcp.tool()(get_latest_observation)
+mcp.tool()(get_calendar_days)
+mcp.tool()(get_cross_rates)
+mcp.tool()(get_cross_rate_aggregates)
+mcp.tool()(list_groups)
+mcp.tool()(get_group_details)
+mcp.tool()(list_series)
+mcp.tool()(get_series_info)
+mcp.tool()(list_exchange_rate_series)
 
 # --- Additional Monetary Policy Tools ---
-mcp.tool()(get_gdp_gap_data)  # type: ignore[Context]
-mcp.tool()(get_policy_rate_data)  # type: ignore[Context]
-mcp.tool()(get_general_government_net_lending_data)  # type: ignore[Context]
+mcp.tool()(get_gdp_gap_data)
+mcp.tool()(get_policy_rate_data)
+mcp.tool()(get_general_government_net_lending_data)
 
 
 def main() -> None:
