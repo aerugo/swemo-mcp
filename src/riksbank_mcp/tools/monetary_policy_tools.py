@@ -1,441 +1,583 @@
 """
-Tools for working with the Riksbank's Monetary Policy data.
+Riksbank Monetary‑Policy API helper functions
+===========================================
 """
 
 import logging
-from typing import List, Optional, Dict, Any
+from typing import Any
 
 from riksbank_mcp.models import (
-    ForecastResult, 
-    Observation, 
-    PolicyRound, 
+    ForecastVintage,
+    MonetaryPolicyDataResponse,
+    MonetaryPolicyDataRoundsResponse,
+    MonetaryPolicyDataSeriesResponse,
+    PolicyRound,
     SeriesInfo,
-    MonetaryPolicyResponse,
-    ForecastSeries
 )
 from riksbank_mcp.services.monetary_policy_api import riksbanken_request
 
-# Set up logging
 logger = logging.getLogger(__name__)
 
-async def list_policy_rounds() -> List[PolicyRound]:
+
+___all__ = [
+    "list_policy_rounds",
+    "list_series_ids",
+    "get_policy_data",
+    "get_gdp_data",
+    "get_unemployment_data",
+    "get_cpi_data",
+    "get_cpif_data",
+    "get_cpif_ex_energy_data",
+    "get_hourly_labour_cost_data",
+    "get_hourly_wage_na_data",
+    "get_hourly_wage_nmo_data",
+    "get_population_data",
+    "get_employed_persons_data",
+    "get_labour_force_data",
+    "get_gdp_gap_data",
+    "get_policy_rate_data",
+    "get_general_government_net_lending_data",
+    "get_gdp_level_saca_data",
+    "get_gdp_level_ca_data",
+    "get_gdp_level_na_data",
+    "get_gdp_yoy_sa_data",
+    "get_gdp_yoy_na_data",
+    "get_cpi_index_data",
+    "get_cpi_yoy_data",
+    "get_cpif_yoy_data",
+    "get_cpif_ex_energy_index_data",
+    "get_nominal_exchange_rate_kix_index_data",
+    "get_nominal_exchange_rate_kix_data",
+    "get_population_level_data",
+]
+
+# =============================================================================
+# ─────────────────────────── Helper / discovery calls ─────────────────────────
+# =============================================================================
+
+
+async def list_policy_rounds() -> MonetaryPolicyDataRoundsResponse:
+    """Return a catalogue of **monetary‑policy rounds** published by the Riksbank.
+
+    A *policy round* designates a discrete set of forecasts typically
+    released in either the **Monetary‑Policy Report (MPR)** or the shorter
+    **Monetary‑Policy Update (MPU)**.  Identifiers follow the pattern
+    ``YYYY:I``—for example ``2025:2`` for the second policy publication in
+    2025.
+
+    Example
+    -------
+    >>> rounds = await list_policy_rounds()
+    >>> for r in rounds.rounds[:3]:
+    ...     print(r.id, r.year, r.iteration)
+    2025:2 2025 2
+    2025:1 2025 1
+    2024:3 2024 3
+
+    Returns
+    -------
+    MonetaryPolicyDataRoundsResponse
+        A pydantic model encapsulating a list of :class:`PolicyRound`
+        objects (``rounds.rounds``).
     """
-    List all available monetary policy rounds from the Riksbank.
+    payload: dict[str, Any] = await riksbanken_request("policy_rounds")
+    identifiers: list[str] = payload.get("data", []) or []
 
-    Retrieves a comprehensive list of all monetary policy rounds, including their
-    identifiers, dates, and descriptions when available.
-
-    Returns:
-        List[PolicyRound]: A list of policy rounds with their metadata.
-
-    Example:
-        >>> rounds = await list_policy_rounds()
-        >>> for r in rounds:
-        ...     print(f"{r.id}: {r.date}")
-    """
-    response = await riksbanken_request("forecasts/policy_rounds")
-    
-    try:
-        # Validate response against expected schema
-        policy_response = MonetaryPolicyResponse(data=response.get("data", []))
-        rounds_data = policy_response.data
-        
-        # Process the data into PolicyRound objects
-        result = []
-        for round_data in rounds_data:
-            if isinstance(round_data, dict):
-                result.append(
-                    PolicyRound(
-                        id=round_data.get("id", ""),
-                        date=round_data.get("date", ""),
-                        description=round_data.get("description")
-                    )
+    rounds: list[PolicyRound] = []
+    for ident in identifiers:
+        try:
+            year_str, iter_str = ident.split(":")
+            rounds.append(
+                PolicyRound(
+                    id=ident,
+                    year=int(year_str),
+                    iteration=int(iter_str),
                 )
-            else:
-                # Handle the case where it's just a string
-                result.append(
-                    PolicyRound(
-                        id=str(round_data),
-                        date="",
-                        description=None
-                    )
+            )
+        except ValueError:
+            logger.warning(f"Unexpected policy round format: {ident}")
+
+    return MonetaryPolicyDataRoundsResponse(rounds=rounds)
+
+
+async def list_series_ids() -> MonetaryPolicyDataSeriesResponse:
+    """List **all** series metadata available via the Monetary‑policy API.
+
+    Use this when you need to discover *which* identifier corresponds to a
+    particular economic concept.
+
+    Returns
+    -------
+    MonetaryPolicyDataSeriesResponse
+        Contains a list of :class:`SeriesInfo`—see attributes ``id``,
+        ``description``, and so on.
+    """
+    payload: dict[str, Any] = await riksbanken_request("series_ids")
+    entries: list[dict[str, Any]] = payload.get("data", []) or []
+
+    series_list: list[SeriesInfo] = []
+    for entry in entries:
+        meta = entry.get("metadata", {})
+        try:
+            series_list.append(
+                SeriesInfo(
+                    id=entry.get("series_id", ""),
+                    decimals=int(meta.get("decimals", 0)),
+                    start_date=meta.get("start_date", ""),
+                    description=meta.get("description", ""),
+                    source_agency=meta.get("source_agency", ""),
+                    unit=meta.get("unit", ""),
+                    note=meta.get("note", None),
                 )
-        return result
-    except Exception as e:
-        logger.error(f"Error processing policy rounds: {e}")
-        return []
+            )
+        except Exception as e:
+            logger.error(
+                f"Error parsing series metadata for {entry.get('series_id')}: {e}"
+            )
+
+    return MonetaryPolicyDataSeriesResponse(series=series_list)
 
 
-async def list_series_ids() -> List[SeriesInfo]:
+# =============================================================================
+# ────────────────────────── Generic data fetch wrapper ────────────────────────
+# =============================================================================
+
+
+async def get_policy_data(
+    series_id: str, policy_round: str | None = None
+) -> MonetaryPolicyDataResponse:
+    """Low‑level fetcher for any *forecast* series.
+
+    Parameters
+    ----------
+    series_id : str
+        The Riksbank *series identifier* (e.g. ``"SEQGDPNAYCA"`` for GDP
+        y/y growth, calendar‑adjusted).
+    policy_round : str | None, default ``None``
+        Optional filter such as ``"2024:3"``.  When supplied, only the
+        vintages released in that round are returned; when ``None`` all
+        vintages across rounds are included.
+
+    Returns
+    -------
+    MonetaryPolicyDataResponse
+        The model contains an ``external_id`` as echoed by the API and a
+        list of :class:`ForecastVintage` objects (see attribute
+        ``vintages``).
+
     """
-    List all available series IDs for forecasts from the Riksbank.
-
-    Retrieves metadata about all economic data series available through the
-    Monetary Policy API, including identifiers, names, and descriptions.
-
-    Returns:
-        List[SeriesInfo]: A list of series information objects with metadata.
-
-    Example:
-        >>> series_list = await list_series_ids()
-        >>> for series in series_list:
-        ...     print(f"{series.id}: {series.name}")
-    """
-    response = await riksbanken_request("forecasts/series_ids")
-    
-    try:
-        # Validate response against expected schema
-        policy_response = MonetaryPolicyResponse(data=response.get("data", []))
-        series_data = policy_response.data
-        
-        # Process the data into SeriesInfo objects
-        result = []
-        for series in series_data:
-            if isinstance(series, dict):
-                metadata = series.get("metadata", {})
-                series_id = series.get("series_id", "")
-                # Use the series "name" if present; otherwise, use the metadata's "description"
-                name_value = series.get("name", "") or metadata.get("description", "")
-                result.append(
-                    SeriesInfo(
-                        id=series_id,
-                        name=name_value,
-                        description=series.get("description") or metadata.get("description"),
-                        unit=series.get("unit"),
-                        metadata=metadata if metadata else None
-                    )
-                )
-        return result
-    except Exception as e:
-        logger.error(f"Error processing series IDs: {e}")
-        return []
-
-
-async def get_forecast_data(
-    series_id: str, policy_round: Optional[str] = None
-) -> ForecastResult:
-    """
-    Fetch forecast data for a given series from the Riksbank Monetary Policy API.
-
-    Retrieves all forecast vintages for the specified series ID. Optionally,
-    if a policy_round is provided, only the vintages matching that round are returned.
-
-    Args:
-        series_id (str): The unique identifier for the economic series (e.g. "GDP").
-        policy_round (Optional[str]): Optional policy round identifier (e.g. "2023:4").
-
-    Returns:
-        ForecastResult: A validated model containing series data and observations.
-
-    Example:
-        >>> result = await get_forecast_data("SEQGDPNAYCA", "2023:4")
-        >>> for obs in result.observations:
-        ...     print(f"{obs.date}: {obs.value}")
-    """
-    params: Dict[str, str] = {"series": series_id}
+    params: dict[str, Any] = {"series": series_id}
     if policy_round:
         params["policy_round_name"] = policy_round
 
-    response = await riksbanken_request("forecasts", params)
-    
-    try:
-        # Validate response against expected schema
-        policy_response = MonetaryPolicyResponse(data=response.get("data", []))
-        raw_items = policy_response.data
-        
-        # Process the data into ForecastSeries objects
-        observations: List[Observation] = []
-        
-        for series_item in raw_items:
-            if not isinstance(series_item, dict):
-                continue
-                
-            # Extract observations from each vintage's observations array
-            for vintage in series_item.get("vintages", []):
-                if not isinstance(vintage, dict):
-                    continue
-                    
-                for obs_item in vintage.get("observations", []):
-                    if not isinstance(obs_item, dict):
-                        continue
-                        
-                    try:
-                        # Ensure value is a number
-                        value = obs_item.get("value")
-                        if value == "":  # Handle empty string values
-                            value = 0.0
-                        else:
-                            value = float(value)
-                            
-                        observations.append(
-                            Observation(
-                                date=obs_item.get("dt", ""),  # Use "dt" for date
-                                value=value,
-                            )
-                        )
-                    except (ValueError, TypeError) as e:
-                        logger.warning(f"Invalid observation value: {e}")
-                        continue
+    payload: dict[str, Any] = await riksbanken_request("", params)
+    items: list[dict[str, Any]] = payload.get("data", []) or []
+    if not items:
+        return MonetaryPolicyDataResponse(external_id=series_id, vintages=[])
 
-        return ForecastResult(
-            series_id=series_id, policy_round=policy_round, observations=observations
-        )
-    except Exception as e:
-        logger.error(f"Error processing forecast data: {e}")
-        return ForecastResult(series_id=series_id, policy_round=policy_round, observations=[])
+    raw = items[0]
+    raw_vintages = raw.get("vintages", [])
+    if isinstance(raw_vintages, dict):
+        raw_vintages = [raw_vintages]  # type: ignore[assignment]
 
+    vintages_objs: list[ForecastVintage] = [
+        ForecastVintage.model_validate(v) for v in raw_vintages  # Pydantic v2
+    ]
 
-async def get_gdp_data(policy_round: str | None = None) -> ForecastResult:
-    """
-    Retrieve forecast data for Sweden's Gross Domestic Product (GDP).
-
-    Args:
-        policy_round (Optional[str]): If provided, filters forecasts to the specified round.
-
-    Returns:
-        ForecastResult: Model containing GDP forecast data (annual percentage change).
-
-    Usage Example:
-        >>> gdp_forecast = await get_gdp_data("2023:4")
-        >>> for obs in gdp_forecast.observations:
-        ...     print(f"Date: {obs.date}, GDP forecast: {obs.value}")
-    """
-    # Commonly used ID for GDP yoy growth (calendar-adjusted):
-    series_id = "SEQGDPNAYCA"
-    return await get_forecast_data(series_id, policy_round)
-
-
-async def get_unemployment_data(policy_round: str | None = None) -> ForecastResult:
-    """
-    Retrieve forecast data for Sweden's unemployment rate (seasonally adjusted).
-
-    Args:
-        policy_round (Optional[str]): If provided, returns data for the specified round.
-
-    Returns:
-        ForecastResult: Model containing unemployment rate forecasts.
-    """
-    series_id = "SEQLABUEASA"  # Unemployment rate (seasonally adjusted)
-    return await get_forecast_data(series_id, policy_round)
-
-
-async def get_cpi_data(policy_round: str | None = None) -> ForecastResult:
-    """
-    Retrieve forecast data for Sweden's Consumer Price Index (CPI).
-
-    Args:
-        policy_round (Optional[str]): If provided, filters data to a specific policy round.
-
-    Returns:
-        ForecastResult: Model containing forecasted CPI data (annual percentage changes).
-    """
-    series_id = "SECPIYRCA"  # CPI series ID (annual percentage change)
-    return await get_forecast_data(series_id, policy_round)
-
-
-async def get_cpif_data(policy_round: str | None = None) -> ForecastResult:
-    """
-    Retrieve Sweden's CPIF (Consumer Price Index with Fixed Interest Rate) forecast.
-
-    Args:
-        policy_round (Optional[str]): Monetary policy round identifier.
-
-    Returns:
-        ForecastResult: CPIF forecast data.
-    """
-    series_id = "SECPIFYRCA"  # CPIF series ID (annual percentage change)
-    return await get_forecast_data(series_id, policy_round)
-
-
-async def get_cpif_ex_energy_data(policy_round: str | None = None) -> ForecastResult:
-    """
-    Retrieve Sweden's CPIF excluding energy forecast data.
-
-    Args:
-        policy_round (Optional[str]): Filter forecasts to a specific round if provided.
-
-    Returns:
-        ForecastResult: Model of CPIF ex-energy forecast data.
-    """
-    series_id = (
-        "SECPIFXEYRCA"  # CPIF excluding energy series ID (annual percentage change)
+    return MonetaryPolicyDataResponse(
+        external_id=raw.get("external_id", series_id),
+        vintages=vintages_objs,
     )
-    return await get_forecast_data(series_id, policy_round)
+
+
+# =============================================================================
+# ──────────────────────────── Thematic wrappers ──────────────────────────────
+# =============================================================================
+# Each function corresponds to *one* Riksbank‑defined series.  Docstrings aim
+# to teach economic interpretation and to show the exact series identifier.
+# =============================================================================
+
+# ─────────────────────────────── Real Economy ────────────────────────────────
+
+
+async def get_gdp_data(policy_round: str | None = None) -> MonetaryPolicyDataResponse:
+    """
+    Gross Domestic Product, **calendar‑adjusted y/y growth**
+    *(Series ID: `SEQGDPNAYCA`)*.
+
+    **When to use**
+    ----------------
+    Use this series when you want growth rates that are **directly
+    comparable across calendar quarters**—for instance in event–study
+    regressions around GDP‑release days.
+    • The calendar adjustment removes variation in the **number of working
+    days**, leap years, Easter shifts, etc., but it **retains seasonal
+    patterns**.
+    • Because Statistics Sweden publishes these numbers first, they are the
+    benchmark for **real‑time forecast evaluation**.
+    """
+    return await get_policy_data("SEQGDPNAYCA", policy_round)
+
+
+async def get_unemployment_data(
+    policy_round: str | None = None,
+) -> MonetaryPolicyDataResponse:
+    """
+    Unemployment rate, **seasonally adjusted LFS**
+    Unit: **percent of labour force**.
+    Note: Seasonally adjusted series.
+    *(Series ID: `SEQLABUEASA`)*.
+    """
+    return await get_policy_data("SEQLABUEASA", policy_round)
+
+
+async def get_cpi_data(policy_round: str | None = None) -> MonetaryPolicyDataResponse:
+    """
+    Headline CPI, **y/y inflation (NSA)**
+    Unit: Annual percentage change.
+    *(Series ID: `SEMCPINAYNA`)*.
+
+    Reference rate for **wage and rent indexation clauses** in Sweden.
+    """
+    return await get_policy_data("SEMCPINAYNA", policy_round)
+
+
+async def get_cpif_data(policy_round: str | None = None) -> MonetaryPolicyDataResponse:
+    """
+    CPIF, **y/y inflation – Riksbank’s operational target**
+    Unit: Annual percentage change.
+    The CPIF is the Riksbank’s target variable for inflation and
+    is used as a basis for the Riksbank’s monetary policy decisions.
+    In its monetary policy analysis, the Riksbank also studies price
+    developments for various sub-groups of the CPIF.
+    Unit: Annual percentage change.
+    *(Series ID: `SEMCPIFNAYNA`)*.
+    """
+    return await get_policy_data("SEMCPIFNAYNA", policy_round)
+
+
+async def get_cpif_ex_energy_data(
+    policy_round: str | None = None,
+) -> MonetaryPolicyDataResponse:
+    """
+    CPIF **excluding energy**, y/y – the Riksbank’s canonical *core* measure.
+    Unit: Annual percentage change.
+    A common approach is to exclude certain predetermined components from CPIF inflation,
+    namely those that are considered to reflect more temporary and short-term movements
+    in the measured inflation rate than the other components do.
+    The CPIF excluding energy is an example of such a measure.
+    *(Series ID: `SEMCPIFFEXYNA`)*.
+    """
+    return await get_policy_data("SEMCPIFFEXYNA", policy_round)
 
 
 async def get_hourly_labour_cost_data(
     policy_round: str | None = None,
-) -> ForecastResult:
+) -> MonetaryPolicyDataResponse:
     """
-    Retrieve forecast data for Sweden's hourly labour cost.
+    Hourly labour cost, **y/y change (National Accounts)**
+    Unit: Annual percentage change.
+    *(Series ID: `SEACOMNAYCA`)*.
 
-    Args:
-        policy_round (Optional[str]): If provided, returns data from the specified round.
-
-    Returns:
-        ForecastResult: Forecast data for hourly labour costs.
+    Key ingredient in **unit‑labour‑cost (ULC)** calculations: combine with GDP per hour to diagnose competitiveness.
     """
-    series_id = "SEHLCYRCA"  # Hourly labour cost series ID
-    return await get_forecast_data(series_id, policy_round)
+    return await get_policy_data("SEACOMNAYCA", policy_round)
 
 
-async def get_hourly_wage_na_data(policy_round: str | None = None) -> ForecastResult:
+async def get_hourly_wage_na_data(
+    policy_round: str | None = None,
+) -> MonetaryPolicyDataResponse:
     """
-    Retrieve forecast data for Sweden's hourly wage (National Accounts).
+    Hourly wage, **National Accounts definition**, y/y
+    Unit: Annual percentage change.
+    Note: Calendar adjusted series.
+    *(Series ID: `SEAWAGNAYCA`)*.
 
-    Args:
-        policy_round (Optional[str]): Specific monetary policy round to filter the data.
-
-    Returns:
-        ForecastResult: Hourly wage NA forecast data.
+    Evaluate **labour‑share dynamics**: pair with GDP at factor cost to see if wage income keeps up with productivity.
     """
-    series_id = "SEHWNAYRCA"  # Hourly wage (NA) series ID
-    return await get_forecast_data(series_id, policy_round)
+    return await get_policy_data("SEAWAGNAYCA", policy_round)
 
 
 async def get_hourly_wage_nmo_data(
     policy_round: str | None = None,
-) -> ForecastResult:
+) -> MonetaryPolicyDataResponse:
     """
-    Retrieve forecast data for Sweden's hourly wage (National Mediation Office).
+    Hourly wage, **National Mediation Office (NMO) measure**, y/y
+    Unit: Annual percentage change.
+    *(Series ID: `SEAWAGKLYNA`)*.
 
-    Args:
-        policy_round (Optional[str]): If specified, filters data to the desired round.
-
-    Returns:
-        ForecastResult: NMO-based hourly wage forecasts.
+    Note that coverage is narrower (collectively‑agreed sectors), so match
+    sample carefully in microdata studies.
     """
-    series_id = "SEHWNMOYRCA"  # Hourly wage (NMO) series ID
-    return await get_forecast_data(series_id, policy_round)
+
+    return await get_policy_data("SEAWAGKLYNA", policy_round)
 
 
-async def get_nominal_exchange_rate_kix_data(
+async def get_population_data(
     policy_round: str | None = None,
-) -> ForecastResult:
+) -> MonetaryPolicyDataResponse:
+    """Population level forecast (total population).
+
+    Series ID: ``SEQPOPNAANA``.
+
+    Measured in *thousands of persons*.  Combine with GDP for per‑capita
+    analyses.
     """
-    Retrieve forecast data for Sweden's nominal exchange rate (KIX).
-
-    Args:
-        policy_round (Optional[str]): Optional policy round identifier.
-
-    Returns:
-        ForecastResult: KIX exchange rate forecasts.
-    """
-    series_id = "SEKIXYRCA"  # KIX exchange rate series ID
-    return await get_forecast_data(series_id, policy_round)
-
-
-async def get_population_data(policy_round: str | None = None) -> ForecastResult:
-    """
-    Retrieve forecast data for Sweden's population.
-
-    Args:
-        policy_round (Optional[str]): Optional filter for a specific forecast cycle.
-
-    Returns:
-        ForecastResult: Population forecast data with (date, value) pairs.
-    """
-    series_id = "SEPOPYRCA"  # Population series ID
-    return await get_forecast_data(series_id, policy_round)
+    return await get_policy_data("SEPOPYRCA", policy_round)
 
 
 async def get_employed_persons_data(
     policy_round: str | None = None,
-) -> ForecastResult:
+) -> MonetaryPolicyDataResponse:
     """
-    Retrieve forecast data for the total number of employed persons in Sweden.
-
-    Args:
-        policy_round (Optional[str]): If provided, returns data from the specified round.
-
-    Returns:
-        ForecastResult: Employment forecast data.
+    Number of **employed persons (LFS)**, seasonally adjusted
+    Unit: Thousands of persons.
+    *(Series ID: `SEQLABEPASA`)*.
     """
-    series_id = "SEEMPYRCA"  # Employed persons series ID
-    return await get_forecast_data(series_id, policy_round)
+
+    return await get_policy_data("SEQLABEPASA", policy_round)
 
 
-async def get_labour_force_data(policy_round: str | None = None) -> ForecastResult:
+async def get_labour_force_data(
+    policy_round: str | None = None,
+) -> MonetaryPolicyDataResponse:
     """
-    Retrieve forecast data for the size of the Swedish labour force.
+    Labour force, **seasonally adjusted level**
+    Unit: Thousands of persons.
+    *(Series ID: `SEQLABLFASA`)*.
 
-    Args:
-        policy_round (Optional[str]): Filter for a specific forecast cycle if desired.
-
-    Returns:
-        ForecastResult: Labour force forecast data.
+    Denominator for **participation‑rate** calculations: employment / labour force.
+    Seasonal adjustment makes the series smoother than the raw LFS count.
     """
-    series_id = "SELABFYRCA"  # Labour force series ID
-    return await get_forecast_data(series_id, policy_round)
+    return await get_policy_data("SEQLABLFASA", policy_round)
 
 
-# -----------------------
-# Additional interesting series
-# -----------------------
-
-
-async def get_gdp_gap_data(policy_round: str | None = None) -> ForecastResult:
+async def get_gdp_gap_data(
+    policy_round: str | None = None,
+) -> MonetaryPolicyDataResponse:
     """
-    Retrieve forecast data for the Swedish GDP gap.
+    Output gap (GDP gap), **percent of potential output**
+    GDP gap refers to the deviation from the Riksbank's assessed long-term trend.
+    Unit: Percent of potential output.
+    *(Series ID: `SEQGDPGAPYSA`)*.
 
-    The GDP gap measures the deviation of actual GDP from its estimated potential,
-    providing insight into whether the economy is operating above or below capacity.
-
-    Args:
-        policy_round (Optional[str]): Filter data to a specific monetary policy round if provided.
-
-    Returns:
-        ForecastResult: A validated model containing GDP gap forecasts (in percent).
-
-    Usage Example:
-        >>> gdp_gap = await get_gdp_gap_data("2024:1")
-        >>> for obs in gdp_gap.observations:
-        ...     print(f"{obs.date}: {obs.value}% deviation from potential")
+    **Note:** The Riksbank’s gap estimate embeds its own filter
+    assumptions; results can differ from other estimates (e.g. OECD).
     """
-    series_id = "SEQGDPGAPYSA"  # GDP gap (seasonally & calendar adjusted)
-    return await get_forecast_data(series_id, policy_round)
+
+    return await get_policy_data("SEQGDPGAPYSA", policy_round)
 
 
-async def get_policy_rate_data(policy_round: str | None = None) -> ForecastResult:
+async def get_policy_rate_data(
+    policy_round: str | None = None,
+) -> MonetaryPolicyDataResponse:
     """
-    Retrieve forecast data for the Swedish Policy Rate (Riksbank repo rate).
+    Policy (repo) rate, **quarterly mean**, percent.
+    Unit: Percent.
+    The policy rate is the rate that governs which rates the banks can
+    deposit in and borrow money from the Riksbank. The banks' deposit and
+    lending rates at the Riksbank in turn affect the banks' interest rates
+    on loans and savings accounts.
 
-    The policy rate is a key tool for monetary policy decisions, influencing
-    market interest rates and overall liquidity.
+    *(Series ID: `SEQRATENAYNA`)*.
 
-    Args:
-        policy_round (Optional[str]): Filter data to a specific round if desired.
 
-    Returns:
-        ForecastResult: A validated model containing the policy rate forecasts (in percent).
-
-    Usage Example:
-        >>> policy_rate = await get_policy_rate_data("2023:4")
-        >>> print("Latest forecasted repo rate:", policy_rate.observations[-1].value)
     """
-    series_id = "SEQRATENAYNA"  # Policy Rate, quarterly mean values
-    return await get_forecast_data(series_id, policy_round)
+    return await get_policy_data("SEQRATENAYNA", policy_round)
 
 
 async def get_general_government_net_lending_data(
     policy_round: str | None = None,
-) -> ForecastResult:
+) -> MonetaryPolicyDataResponse:
+    """General‑government net lending (% of GDP).
+    Unit: Percent of GDP.
+
+    Series ID: ``SEAPBSNAYNA``.
     """
-    Retrieve forecast data for Sweden's general government net lending.
+    return await get_policy_data("SEAPBSNAYNA", policy_round)
 
-    This series represents the net lending/borrowing of the public sector and is
-    typically expressed as a percentage of GDP.
 
-    Args:
-        policy_round (Optional[str]): Optionally filter to a specific forecast round.
+# ──────────────── GDP level variants (calendar / seasonal adj.) ───────────────
 
-    Returns:
-        ForecastResult: A validated model containing net lending data (share of GDP).
 
-    Usage Example:
-        >>> gov_lending = await get_general_government_net_lending_data("2024:1")
-        >>> for obs in gov_lending.observations:
-        ...     print(f"{obs.date}: {obs.value}% of GDP")
+async def get_gdp_level_saca_data(
+    policy_round: str | None = None,
+) -> MonetaryPolicyDataResponse:
     """
-    series_id = "SEAPBSNAYNA"  # General government net lending, % of GDP
-    return await get_forecast_data(series_id, policy_round)
+    Real GDP level, **seasonally *and* calendar‑adjusted** (SACA).
+
+    **Unit**: million SEK, constant (chain‑linked) prices
+    **Series ID**: `SEQGDPNAASA`
+
+    **What is adjusted?**
+    • *Seasonal adjustment* removes predictable intra‑year production swings –
+      e.g. Christmas shutdowns, summer vacations, harvest cycles – so each
+      quarter reflects underlying momentum rather than the time of year.
+    • *Calendar adjustment* removes distortions from the varying number of
+      working days, moving holidays such as Easter, and leap‑year effects.
+
+    Because **both** sources of systematic variation are stripped out, adjacent
+    quarters are directly comparable; Q‑on‑Q growth rates capture genuine
+    economic changes rather than calendar artefacts.
+    """
+    return await get_policy_data("SEQGDPNAASA", policy_round)
+
+
+async def get_gdp_level_ca_data(
+    policy_round: str | None = None,
+) -> MonetaryPolicyDataResponse:
+    """
+    Real GDP level, **calendar‑adjusted (seasonal pattern intact)** (CA).
+
+    **Unit**: million SEK, constant (chain‑linked) prices
+    **Series ID**: `SEQGDPNAACA`
+
+    **What is adjusted?**
+    • *Calendar adjustment only* – effects from varying working‑day counts,
+      leap years, and moveable feasts are removed so that each quarter has a
+      comparable number of effective production days.
+
+    **What remains?**
+    • The *seasonal pattern* (regular intra‑year fluctuations) is **left
+      untouched**. As a result, comparing the same quarter year‑over‑year (e.g.
+      Q2 vs Q2) is meaningful, but quarter‑to‑quarter movements still follow
+      the familiar seasonal rhythm.
+    """
+    return await get_policy_data("SEQGDPNAACA", policy_round)
+
+
+async def get_gdp_level_na_data(
+    policy_round: str | None = None,
+) -> MonetaryPolicyDataResponse:
+    """
+    Real GDP level, **non‑adjusted (NSA)**.
+
+    **Unit**: million SEK, constant (chain‑linked) prices
+    **Series ID**: `SEQGDPNAANA`
+
+    **What is adjusted?**
+    • Nothing – this is the raw series at constant prices. It still contains
+      both seasonal swings *and* calendar effects.
+    """
+    return await get_policy_data("SEQGDPNAANA", policy_round)
+
+
+async def get_gdp_yoy_sa_data(
+    policy_round: str | None = None,
+) -> MonetaryPolicyDataResponse:
+    """
+    GDP **y/y growth, seasonally *and* calendar‑adjusted**
+    *(Series ID: `SEQGDPNAYSA`)*.
+
+    **When to use**
+    ----------------
+    The full SA‑CA filter makes this series ideal for
+    • **Cross‑country comparisons** where different holiday structures would
+      otherwise distort the data,
+    • Computing **annualised q/q growth chains**, and
+    • Structural models that assume residuals are i.i.d. over the year.
+
+    If you care about the precise wording used by Statistics Sweden on
+    release day, use :func:`get_gdp_data` instead (calendar‑adjusted only).
+    """
+    return await get_policy_data("SEQGDPNAYSA", policy_round)
+
+
+async def get_gdp_yoy_na_data(
+    policy_round: str | None = None,
+) -> MonetaryPolicyDataResponse:
+    """GDP y/y growth, **non‑adjusted (NSA)**.
+
+    Series ID: ``SEQGDPNAYNA``.
+    """
+    return await get_policy_data("SEQGDPNAYNA", policy_round)
+
+
+# ─────────────────────────────── CPI level/changes ───────────────────────────
+
+
+async def get_cpi_index_data(
+    policy_round: str | None = None,
+) -> MonetaryPolicyDataResponse:
+    """CPI index level (base 1980 = 100).
+
+    Series ID: ``SEMCPINAANA``.
+    """
+    return await get_policy_data("SEMCPINAANA", policy_round)
+
+
+async def get_cpi_yoy_data(
+    policy_round: str | None = None,
+) -> MonetaryPolicyDataResponse:
+    """CPI y/y inflation (headline).
+
+    Series ID: ``SEMCPINAYNA``.
+    """
+    return await get_policy_data("SEMCPINAYNA", policy_round)
+
+
+# ─────────────────────────────── CPIF variants ───────────────────────────────
+
+
+async def get_cpif_yoy_data(
+    policy_round: str | None = None,
+) -> MonetaryPolicyDataResponse:
+    """CPIF y/y inflation—the **target variable**.
+
+    Series ID: ``SEMCPIFNAYNA``.
+    """
+    return await get_policy_data("SEMCPIFNAYNA", policy_round)
+
+
+async def get_cpif_ex_energy_index_data(
+    policy_round: str | None = None,
+) -> MonetaryPolicyDataResponse:
+    """
+    CPIF **excluding energy, index level (1987 = 100)**
+    *(Series ID: `SEMCPIFFEXANA`)*.
+
+    **When to use**
+    ----------------
+    • Construct **core‑inflation fan charts**: convert the index to y/y
+      growth to visualise uncertainty around underlying price trends.
+    • Derive **real purchasing‑power series** by deflating nominal wages or
+      household income with this index rather than headline CPI, thereby
+      filtering out energy price noise.
+    """
+    return await get_policy_data("SEMCPIFFEXANA", policy_round)
+
+
+# ─────────────── Nominal exchange rate (KIX) – index level ───────────────────
+
+
+async def get_nominal_exchange_rate_kix_index_data(
+    policy_round: str | None = None,
+) -> MonetaryPolicyDataResponse:
+    """
+    Nominal KIX exchange‑rate **index level**
+    The exchange rate index weights together different bilateral exchange rates
+    to create an effective (or average) exchange rate. By studying the exchange
+    rate index, you can see how much the value of the krona has changed.
+    A higher value in the index means that the krona has depreciated and a
+    lower value means that the krona has appreciated.
+    Unit: Index, 18 Nov 1992 = 100
+    *(Series ID: `SEQKIXNAANA`, 18 Nov 1992 = 100)*.
+
+    Remember: A **higher** KIX value means a **weaker** krona.
+    """
+    return await get_policy_data("SEQKIXNAANA", policy_round)
+
+
+# ────────────────────────────── Demographics ─────────────────────────────────
+
+
+async def get_population_level_data(
+    policy_round: str | None = None,
+) -> MonetaryPolicyDataResponse:
+    """
+    Population aged 15‑74, **level (thousands)**
+    Unit: Thousands of persons.
+    *(Series ID: `SEQPOPNAANA`)*.
+
+    """
+    return await get_policy_data("SEQPOPNAANA", policy_round)

@@ -5,7 +5,6 @@ Pydantic models for Riksbank data validation and documentation.
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Dict, List, Optional, Any
 
 from pydantic import BaseModel, Field
 
@@ -23,39 +22,53 @@ class ForecastMetadata(BaseModel):
     """
     Metadata for a forecast vintage.
     """
-    
-    revision_dtm: datetime = Field(..., description="Timestamp when this forecast was revised")
-    forecast_cutoff_date: date = Field(..., description="Date when forecast data was finalized")
-    policy_round: str = Field(..., description="Policy round identifier (e.g. '2023:4')")
-    policy_round_code: str = Field(..., description="Internal code for the policy round")
-    policy_round_end_dtm: datetime = Field(..., description="End timestamp for the policy round")
+
+    revision_dtm: datetime | None = Field(
+        None,
+        description="Timestamp when this forecast was revised (may be missing)",
+    )
+    forecast_cutoff_date: date = Field(
+        ..., description="Date when forecast data was finalized"
+    )
+    policy_round: str = Field(
+        ..., description="Policy round identifier (e.g. '2023:4')"
+    )
+    policy_round_code: str | None = Field(
+        None,
+        description="Internal code for the policy round (may be missing)",
+    )
+    policy_round_end_dtm: datetime = Field(
+        ..., description="End timestamp for the policy round"
+    )
 
 
 class ForecastObservation(BaseModel):
     """
     A single forecast observation with date and value.
     """
-    
-    dt: str = Field(..., description="Date of the observation in YYYY-MM-DD format")
-    value: float = Field(..., description="Value of the observation")
+
+    dt: str = Field(
+        ..., description="Date of the forecasted observation in YYYY-MM-DD format"
+    )
+    value: float = Field(..., description="Value of the forecasted observation")
 
 
 class ForecastVintage(BaseModel):
     """
     A forecast vintage containing metadata and observations.
     """
-    
+
     metadata: ForecastMetadata
-    observations: List[ForecastObservation]
+    observations: list[ForecastObservation]
 
 
 class ForecastSeries(BaseModel):
     """
     A complete forecast series with its vintages.
     """
-    
+
     external_id: str = Field(..., description="Series identifier")
-    vintages: List[ForecastVintage]
+    vintages: list[ForecastVintage]
 
 
 class ForecastResult(BaseModel):
@@ -64,8 +77,8 @@ class ForecastResult(BaseModel):
     """
 
     series_id: str
-    policy_round: Optional[str] = None
-    observations: List[Observation]
+    policy_round: str
+    observations: list[Observation]
 
 
 class PolicyRound(BaseModel):
@@ -74,8 +87,8 @@ class PolicyRound(BaseModel):
     """
 
     id: str
-    date: str
-    description: Optional[str] = None
+    year: int
+    iteration: int
 
 
 class SeriesInfo(BaseModel):
@@ -84,10 +97,12 @@ class SeriesInfo(BaseModel):
     """
 
     id: str
-    name: str
-    description: Optional[str] = None
-    unit: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    decimals: int
+    start_date: date
+    description: str
+    source_agency: str
+    unit: str
+    note: str | None = None
 
 
 class ExchangeRateData(BaseModel):
@@ -96,7 +111,7 @@ class ExchangeRateData(BaseModel):
     """
 
     series_id: str
-    observations: List[Observation]
+    observations: list[Observation]
 
 
 class InterestRateData(BaseModel):
@@ -104,7 +119,7 @@ class InterestRateData(BaseModel):
     Interest rate data result.
     """
 
-    observations: List[Observation]
+    observations: list[Observation]
 
 
 class CalendarDay(BaseModel):
@@ -120,9 +135,7 @@ class CalendarDay(BaseModel):
     quarter_number: int = Field(..., alias="quarterNumber")
     ultimo: bool
 
-    model_config = {
-        "populate_by_name": True
-    }
+    model_config = {"populate_by_name": True}
 
 
 class CrossRate(BaseModel):
@@ -178,14 +191,29 @@ class ObservationAggregate(BaseModel):
     ultimo: float
     observation_count: int = Field(..., alias="observationCount")
 
-    model_config = {
-        "populate_by_name": True
-    }
+    model_config = {"populate_by_name": True}
 
 
-class MonetaryPolicyResponse(BaseModel):
+class MonetaryPolicyDataResponse(BaseModel):
     """
-    Generic response model for Monetary Policy API endpoints.
+    Represents the response from the Monetary Policy Data endpoint main endpoint.
     """
-    
-    data: List[Any]
+
+    external_id: str
+    vintages: list[ForecastVintage]
+
+
+class MonetaryPolicyDataRoundsResponse(BaseModel):
+    """
+    Represents the response from the Monetary Policy Data endpoint for rounds.
+    """
+
+    rounds: list[PolicyRound]
+
+
+class MonetaryPolicyDataSeriesResponse(BaseModel):
+    """
+    Represents the response from the Monetary Policy Data endpoint for series.
+    """
+
+    series: list[SeriesInfo]

@@ -8,42 +8,43 @@ from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator
 
 from mcp.server import FastMCP
+
 from riksbank_mcp.tools.monetary_policy_tools import (
-    list_policy_rounds,
-    list_series_ids,
-    get_forecast_data,
-    get_gdp_data,
-    get_unemployment_data,
     get_cpi_data,
     get_cpif_data,
     get_cpif_ex_energy_data,
+    get_employed_persons_data,
+    get_gdp_data,
+    get_gdp_gap_data,
+    get_general_government_net_lending_data,
     get_hourly_labour_cost_data,
     get_hourly_wage_na_data,
     get_hourly_wage_nmo_data,
-    get_nominal_exchange_rate_kix_data,
-    get_population_data,
-    get_employed_persons_data,
     get_labour_force_data,
-    get_gdp_gap_data,
+    get_nominal_exchange_rate_kix_data,
+    get_policy_data,
     get_policy_rate_data,
-    get_general_government_net_lending_data,
+    get_population_data,
+    get_unemployment_data,
+    list_policy_rounds,
+    list_series_ids,
 )
 from riksbank_mcp.tools.swea_tools import (
-    get_policy_rate,
-    get_usd_exchange_rate,
+    get_calendar_days,
+    get_cross_rate_aggregates,
+    get_cross_rates,
     get_eur_exchange_rate,
     get_gbp_exchange_rate,
+    get_group_details,
+    get_latest_observation,
     get_mortgage_rate,
     get_observation_aggregates,
-    get_latest_observation,
-    get_calendar_days,
-    get_cross_rates,
-    get_cross_rate_aggregates,
-    list_groups,
-    get_group_details,
-    list_series,
+    get_policy_rate,
     get_series_info,
+    get_usd_exchange_rate,
     list_exchange_rate_series,
+    list_groups,
+    list_series,
 )
 from riksbank_mcp.tools.swestr_tools import (
     get_latest_swestr,
@@ -98,7 +99,7 @@ mcp = FastMCP(
 # Register Monetary Policy tools
 mcp.tool()(list_policy_rounds)  # type: ignore[Context]
 mcp.tool()(list_series_ids)  # type: ignore[Context]
-mcp.tool()(get_forecast_data)  # type: ignore[Context]
+mcp.tool()(get_policy_data)  # type: ignore[Context]
 mcp.tool()(get_gdp_data)  # type: ignore[Context]
 mcp.tool()(get_unemployment_data)  # type: ignore[Context]
 mcp.tool()(get_cpi_data)  # type: ignore[Context]
@@ -127,20 +128,20 @@ mcp.tool()(get_swestr_1week)  # type: ignore[Context]
 mcp.tool()(get_swestr_1month)  # type: ignore[Context]
 
 # --- Additional SWEA Tools ---
-mcp.tool()(get_observation_aggregates)      # type: ignore[Context]
-mcp.tool()(get_latest_observation)            # type: ignore[Context]
-mcp.tool()(get_calendar_days)                 # type: ignore[Context]
-mcp.tool()(get_cross_rates)                   # type: ignore[Context]
-mcp.tool()(get_cross_rate_aggregates)         # type: ignore[Context]
-mcp.tool()(list_groups)                       # type: ignore[Context]
-mcp.tool()(get_group_details)                 # type: ignore[Context]
-mcp.tool()(list_series)                       # type: ignore[Context]
-mcp.tool()(get_series_info)                   # type: ignore[Context]
-mcp.tool()(list_exchange_rate_series)         # type: ignore[Context]
+mcp.tool()(get_observation_aggregates)  # type: ignore[Context]
+mcp.tool()(get_latest_observation)  # type: ignore[Context]
+mcp.tool()(get_calendar_days)  # type: ignore[Context]
+mcp.tool()(get_cross_rates)  # type: ignore[Context]
+mcp.tool()(get_cross_rate_aggregates)  # type: ignore[Context]
+mcp.tool()(list_groups)  # type: ignore[Context]
+mcp.tool()(get_group_details)  # type: ignore[Context]
+mcp.tool()(list_series)  # type: ignore[Context]
+mcp.tool()(get_series_info)  # type: ignore[Context]
+mcp.tool()(list_exchange_rate_series)  # type: ignore[Context]
 
 # --- Additional Monetary Policy Tools ---
-mcp.tool()(get_gdp_gap_data)                    # type: ignore[Context]
-mcp.tool()(get_policy_rate_data)                # type: ignore[Context]
+mcp.tool()(get_gdp_gap_data)  # type: ignore[Context]
+mcp.tool()(get_policy_rate_data)  # type: ignore[Context]
 mcp.tool()(get_general_government_net_lending_data)  # type: ignore[Context]
 
 

@@ -7,7 +7,6 @@ from __future__ import annotations
 from datetime import date
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field
 from riksbank_mcp.models import (
     CalendarDay,
     CrossRate,
@@ -15,44 +14,9 @@ from riksbank_mcp.models import (
     ExchangeRateData,
     InterestRateData,
     Observation,
+    ObservationAggregate,
 )
 from riksbank_mcp.services.swea_api import swea_request
-
-
-class ObservationAggregate(BaseModel):
-    """
-    Represents an aggregated observation (e.g. weekly, monthly, quarterly, yearly)
-    as returned by the SWEA API /ObservationAggregates endpoints.
-
-    Fields:
-        year (int): Calendar or fiscal year of this aggregate.
-        seq_nr (int): Sequence index of the aggregate within the year (e.g., which week/quarter).
-        from_date (str): Start date of the aggregated period, ISO 8601 (YYYY-MM-DD).
-        to_date (str): End date of the aggregated period, ISO 8601 (YYYY-MM-DD).
-        average (float): Average value across all underlying observations in the period.
-        min (float): Minimum observed value in the period.
-        max (float): Maximum observed value in the period.
-        ultimo (float): The last valid observation in the period (e.g., last bank day).
-        observation_count (int): Number of actual daily observations included in the aggregate.
-
-    Usage:
-        Use `get_observation_aggregates` for retrieving aggregated results directly from the SWEA API.
-        Analysts can use these aggregates to monitor monthly, quarterly, or yearly trends in interest rates
-        or exchange rates without manually summarizing daily observations.
-    """
-
-    year: int = Field(..., alias="year")
-    seq_nr: int = Field(..., alias="seqNr")
-    from_date: str = Field(..., alias="from")
-    to_date: str = Field(..., alias="to")
-    average: float
-    min: float
-    max: float
-    ultimo: float
-    observation_count: int = Field(..., alias="observationCount")
-
-    class Config:
-        allow_population_by_field_name = True
 
 
 async def fetch_observations(

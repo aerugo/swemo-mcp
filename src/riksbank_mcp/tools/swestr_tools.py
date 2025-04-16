@@ -5,9 +5,9 @@ Tools for working with the Riksbank's SWESTR (Swedish krona Short Term Rate) dat
 from __future__ import annotations
 
 from datetime import date
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
 
-from riksbank_mcp.models import Observation, InterestRateData
+from riksbank_mcp.models import InterestRateData, Observation
 from riksbank_mcp.services.swestr_api import swestr_request
 
 
@@ -31,15 +31,12 @@ async def fetch_interest_rate(
 
     try:
         data = await swestr_request(endpoint, params)
-        
+
         observations = []
         for item in data.get("data", []):
             if isinstance(item, dict) and "date" in item and "value" in item:
                 observations.append(
-                    Observation(
-                        date=item["date"],
-                        value=float(item["value"])
-                    )
+                    Observation(date=item["date"], value=float(item["value"]))
                 )
         return observations
     except Exception as e:
@@ -86,17 +83,14 @@ async def get_latest_swestr() -> Optional[Observation]:
         ...     print(f"Latest SWESTR ({latest.date}): {latest.value}%")
     """
     endpoint = "rates/latest"
-    
+
     try:
         data = await swestr_request(endpoint)
-        
+
         if "data" in data and data["data"]:
             item = data["data"]
             if "date" in item and "value" in item:
-                return Observation(
-                    date=item["date"],
-                    value=float(item["value"])
-                )
+                return Observation(date=item["date"], value=float(item["value"]))
         return None
     except Exception as e:
         print(f"Error fetching latest SWESTR: {e}")
@@ -132,15 +126,12 @@ async def get_swestr_averages(
 
     try:
         data = await swestr_request(endpoint, params)
-        
+
         observations = []
         for item in data.get("data", []):
             if isinstance(item, dict) and "date" in item and "value" in item:
                 observations.append(
-                    Observation(
-                        date=item["date"],
-                        value=float(item["value"])
-                    )
+                    Observation(date=item["date"], value=float(item["value"]))
                 )
         return InterestRateData(observations=observations)
     except Exception as e:
@@ -177,15 +168,12 @@ async def get_swestr_1week(
 
     try:
         data = await swestr_request(endpoint, params)
-        
+
         observations = []
         for item in data.get("data", []):
             if isinstance(item, dict) and "date" in item and "value" in item:
                 observations.append(
-                    Observation(
-                        date=item["date"],
-                        value=float(item["value"])
-                    )
+                    Observation(date=item["date"], value=float(item["value"]))
                 )
         return InterestRateData(observations=observations)
     except Exception as e:
@@ -222,15 +210,12 @@ async def get_swestr_1month(
 
     try:
         data = await swestr_request(endpoint, params)
-        
+
         observations = []
         for item in data.get("data", []):
             if isinstance(item, dict) and "date" in item and "value" in item:
                 observations.append(
-                    Observation(
-                        date=item["date"],
-                        value=float(item["value"])
-                    )
+                    Observation(date=item["date"], value=float(item["value"]))
                 )
         return InterestRateData(observations=observations)
     except Exception as e:
