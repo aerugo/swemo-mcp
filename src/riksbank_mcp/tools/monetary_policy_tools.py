@@ -7,6 +7,7 @@ import logging
 from datetime import date
 from typing import Any
 
+
 # ---------------------------------------------------------------------
 # Resolve the most recent policy‑round ID once – used by several helpers
 # ---------------------------------------------------------------------
@@ -16,6 +17,7 @@ async def _latest_round_id() -> str | None:
     if not rounds.rounds:
         return None
     return max(rounds.rounds, key=lambda r: (r.year, r.iteration)).id
+
 
 from riksbank_mcp.models import ForecastObservation  # NEW
 from riksbank_mcp.models import (
@@ -285,15 +287,15 @@ async def get_gdp_data(
     """
     Gross Domestic Product, **calendar‑adjusted y/y growth**
     *(Series ID: `SEQGDPNAYCA`)*.
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
 
     Use this series when you want growth rates that are **directly
     comparable across calendar quarters**—for instance in event–study
@@ -315,15 +317,15 @@ async def get_unemployment_data(
     Unit: **percent of labour force**.
     Note: Seasonally adjusted series.
     *(Series ID: `SEQLABUEASA`)*.
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
     """
     return await _fetch_series("SEQLABUEASA", req)
 
@@ -335,15 +337,15 @@ async def get_cpi_data(
     Headline CPI, **y/y inflation (NSA)**
     Unit: Annual percentage change.
     *(Series ID: `SEMCPINAYNA`)*.
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
 
     Reference rate for **wage and rent indexation clauses** in Sweden.
     """
@@ -362,15 +364,15 @@ async def get_cpif_data(
     developments for various sub-groups of the CPIF.
     Unit: Annual percentage change.
     *(Series ID: `SEMCPIFNAYNA`)*.
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
     """
     return await _fetch_series("SEMCPIFNAYNA", req)
 
@@ -386,15 +388,15 @@ async def get_cpif_ex_energy_data(
     in the measured inflation rate than the other components do.
     The CPIF excluding energy is an example of such a measure.
     *(Series ID: `SEMCPIFFEXYNA`)*.
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
     """
     return await _fetch_series("SEMCPIFFEXYNA", req)
 
@@ -406,15 +408,15 @@ async def get_hourly_labour_cost_data(
     Hourly labour cost, **y/y change (National Accounts)**
     Unit: Annual percentage change.
     *(Series ID: `SEACOMNAYCA`)*.
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
 
     Key ingredient in **unit‑labour‑cost (ULC)** calculations: combine with GDP per hour to diagnose competitiveness.
     """
@@ -429,15 +431,15 @@ async def get_hourly_wage_na_data(
     Unit: Annual percentage change.
     Note: Calendar adjusted series.
     *(Series ID: `SEAWAGNAYCA`)*.
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
 
     Evaluate **labour‑share dynamics**: pair with GDP at factor cost to see if wage income keeps up with productivity.
     """
@@ -451,15 +453,15 @@ async def get_hourly_wage_nmo_data(
     Hourly wage, **National Mediation Office (NMO) measure**, y/y
     Unit: Annual percentage change.
     *(Series ID: `SEAWAGKLYNA`)*.
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
 
     Note that coverage is narrower (collectively‑agreed sectors), so match
     sample carefully in microdata studies.
@@ -475,14 +477,13 @@ async def get_population_data(
 
     Series ID: ``SEQPOPNAANA``.
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
 
     Measured in *thousands of persons*.  Combine with GDP for per‑capita
     analyses.
@@ -497,15 +498,15 @@ async def get_employed_persons_data(
     Number of **employed persons (LFS)**, seasonally adjusted
     Unit: Thousands of persons.
     *(Series ID: `SEQLABEPASA`)*.
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
     """
 
     return await _fetch_series("SEQLABEPASA", req)
@@ -518,15 +519,15 @@ async def get_labour_force_data(
     Labour force, **seasonally adjusted level**
     Unit: Thousands of persons.
     *(Series ID: `SEQLABLFASA`)*.
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
 
     Denominator for **participation‑rate** calculations: employment / labour force.
     Seasonal adjustment makes the series smoother than the raw LFS count.
@@ -542,15 +543,15 @@ async def get_gdp_gap_data(
     GDP gap refers to the deviation from the Riksbank's assessed long-term trend.
     Unit: Percent of potential output.
     *(Series ID: `SEQGDPGAPYSA`)*.
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
 
     **Note:** The Riksbank’s gap estimate embeds its own filter
     assumptions; results can differ from other estimates (e.g. OECD).
@@ -564,6 +565,7 @@ async def get_policy_rate_data(
 ) -> MonetaryPolicyDataResponse:
     """
     Policy (repo) rate, **quarterly mean**, percent.
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
     Unit: Percent.
     The policy rate is the rate that governs which rates the banks can
     deposit in and borrow money from the Riksbank. The banks' deposit and
@@ -572,14 +574,13 @@ async def get_policy_rate_data(
 
     *(Series ID: `SEQRATENAYNA`)*.
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
 
 
     """
@@ -590,16 +591,17 @@ async def get_general_government_net_lending_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """General‑government net lending (% of GDP).
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
+
     Unit: Percent of GDP.
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
 
     Series ID: ``SEAPBSNAYNA``.
     """
@@ -614,18 +616,18 @@ async def get_gdp_level_saca_data(
 ) -> MonetaryPolicyDataResponse:
     """
     Real GDP level, **seasonally *and* calendar‑adjusted** (SACA).
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
 
     **Unit**: million SEK, constant (chain‑linked) prices
     **Series ID**: `SEQGDPNAASA`
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
 
     **What is adjusted?**
     • *Seasonal adjustment* removes predictable intra‑year production swings –
@@ -650,14 +652,13 @@ async def get_gdp_level_ca_data(
     **Unit**: million SEK, constant (chain‑linked) prices
     **Series ID**: `SEQGDPNAACA`
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
 
     **What is adjusted?**
     • *Calendar adjustment only* – effects from varying working‑day counts,
@@ -678,6 +679,7 @@ async def get_gdp_level_na_data(
 ) -> MonetaryPolicyDataResponse:
     """
     Real GDP level, **non‑adjusted (NSA)**.
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
 
     **Unit**: million SEK, constant (chain‑linked) prices
     **Series ID**: `SEQGDPNAANA`
@@ -695,15 +697,15 @@ async def get_gdp_yoy_sa_data(
     """
     GDP **y/y growth, seasonally *and* calendar‑adjusted**
     *(Series ID: `SEQGDPNAYSA`)*.
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
 
     **When to use**
     ----------------
@@ -723,15 +725,15 @@ async def get_gdp_yoy_na_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """GDP y/y growth, **non‑adjusted (NSA)**.
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
 
     Series ID: ``SEQGDPNAYNA``.
     """
@@ -746,14 +748,13 @@ async def get_cpi_index_data(
 ) -> MonetaryPolicyDataResponse:
     """CPI index level (base 1980 = 100).
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
 
     Series ID: ``SEMCPINAANA``.
     """
@@ -765,14 +766,13 @@ async def get_cpi_yoy_data(
 ) -> MonetaryPolicyDataResponse:
     """CPI y/y inflation (headline).
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
 
     Series ID: ``SEMCPINAYNA``.
     """
@@ -786,15 +786,15 @@ async def get_cpif_yoy_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """CPIF y/y inflation—the **target variable**.
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
 
     Series ID: ``SEMCPIFNAYNA``.
     """
@@ -807,15 +807,15 @@ async def get_cpif_ex_energy_index_data(
     """
     CPIF **excluding energy, index level (1987 = 100)**
     *(Series ID: `SEMCPIFFEXANA`)*.
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
 
     **When to use**
     ----------------
@@ -836,6 +836,8 @@ async def get_nominal_exchange_rate_kix_index_data(
 ) -> MonetaryPolicyDataResponse:
     """
     Nominal KIX exchange‑rate **index level**
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
+
     The exchange rate index weights together different bilateral exchange rates
     to create an effective (or average) exchange rate. By studying the exchange
     rate index, you can see how much the value of the krona has changed.
@@ -844,14 +846,13 @@ async def get_nominal_exchange_rate_kix_index_data(
     Unit: Index, 18 Nov 1992 = 100
     *(Series ID: `SEQKIXNAANA`, 18 Nov 1992 = 100)*.
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
 
     Remember: A **higher** KIX value means a **weaker** krona.
     """
@@ -868,15 +869,15 @@ async def get_population_level_data(
     Population aged 15‑74, **level (thousands)**
     Unit: Thousands of persons.
     *(Series ID: `SEQPOPNAANA`)*.
+    Observations and forecasts. Call "latest" for final data or older policy rounds for historical forecasts that influenced policy.
 
-    LLM call format
-    ---------------
     Invoke the tool with one **JSON object** as argument, e.g.:
 
-        {"policy_round": "2022:1", "include_realized": true}
+        {"policy_round": "2022:1" or "latest, "include_realized": true}
 
     • Omit `"policy_round"` to retrieve every vintage.
     • Set `"include_realized": true` to append realised (out‑turn) values.
+    • For final historical data, pass `policy_round="latest"`.
 
     """
     return await _fetch_series("SEQPOPNAANA", req)

@@ -9,15 +9,6 @@ from datetime import date, datetime
 from pydantic import BaseModel, Field
 
 
-class Observation(BaseModel):
-    """
-    A single observation of an economic indicator.
-    """
-
-    date: str
-    value: float
-
-
 class ForecastMetadata(BaseModel):
     """
     Metadata for a forecast vintage.
@@ -79,16 +70,6 @@ class ForecastSeries(BaseModel):
 
     external_id: str = Field(..., description="Series identifier")
     vintages: list[ForecastVintage]
-
-
-class ForecastResult(BaseModel):
-    """
-    Result of a forecast data query.
-    """
-
-    series_id: str
-    policy_round: str
-    observations: list[Observation]
 
 
 class PolicyRound(BaseModel):

@@ -1,14 +1,12 @@
-# Riksbanken MCP Server
-# Riksbank Monetary‑Policy Data MCP Server
+# Swedish Monetary‑Policy Data MCP Server
 
-[![PyPI version](https://img.shields.io/pypi/v/riksbank-mcp.svg)](https://pypi.org/project/riksbank-mcp)
-[![Build](https://github.com/aerugo/riksbank-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/aerugo/riksbank-mcp/actions)
 [![License: Apache‑2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-> **Access Swedish monetary‑policy forecasts & outcomes _as code_.**
+> **Access Swedish monetary‑policy forecasts & realised historical data _as code_.**
 
-The unofficial **Monetary‑Policy Data MCP Server** wraps Sveriges Riksbank’s open API for
-forecasts and realised outcomes (2020‑present) in a [Model‑Context‑Protocol](https://modelcontextprotocol.io/) (MCP) micro‑service.  It turns the raw REST end‑points into **typed Python tools** that can be invoked by LLMs or by humans through the [MCP CLI](https://github.com/modelcontext/mcp-cli).
+An unofficial **Monetary‑Policy Data MCP Server** wraps Sveriges Riksbank’s open API (2020 → present) in a [Model‑Context‑Protocol](https://modelcontextprotocol.io/) (MCP) micro‑service.  It turns the raw REST end‑points into **typed Python tools** that can be invoked by LLMs or by humans through the [MCP CLI](https://github.com/modelcontext/mcp-cli).
+
+This edition of the README assumes you are using **[Astral’s `uv`](https://github.com/astral-sh/uv)** for dependency management and execution – exactly the same workflow as the Kolada MCP Server.
 
 ---
 
@@ -18,30 +16,35 @@ forecasts and realised outcomes (2020‑present) in a [Model‑Context‑Protoco
 2. [The underlying data](#the-underlying-data)
    * [Policy rounds](#policy-rounds)
    * [Series identifiers](#series-identifiers)
-   * [Forecast vintages](#forecast-vintages)
+   * [Forecast vintages & observations](#forecast-vintages--observations)
 3. [How the MCP server works](#how-the-mcp-server-works)
    * [Architecture](#architecture)
    * [Catalogue of tools](#catalogue-of-tools)
 4. [Installation](#installation)
 5. [Quick‑start](#quick-start)
-6. [Docker](#docker)
-7. [Development](#development)
-8. [License](#license)
+6. [Examples (Analysts & Journalists)](#examples-analysts--journalists)
+7. [Docker](#docker)
+8. [Development](#development)
+9. [License](#license)
 
 ---
 
 ## Why this exists
 
-Working with **real‑time monetary‑policy data** is painful: the raw API
-requires hand‑crafted queries, and each response must be normalised
-before analysis.  This project
+Working with monetary‑policy data can be complicated: the raw API
+requires hand‑crafted queries and knowledge of the different series.
+This project:
 
 * hides the HTTP plumbing behind a **clean, async Python interface**,
-* provides **data‑class validation** (via *pydantic v2*) so that upstream
-  code sees _guaranteed_ field names and types, and
 * exposes every series as an **MCP tool** discoverable by LLMs – allowing
   Claude Desktop and other MCP client tools to fetch Swedish
   macro data on demand.
+
+As of 2020, the Riksbank’s service now includes both forecast values and
+**realised (observed) data** once official figures are published. This
+makes the dataset suitable for **historical analysis** (e.g. “What
+actually happened to inflation in 2022?”) and for **forecast queries**
+(e.g. “What does the Riksbank project for GDP next year?”).
 
 ---
 
@@ -49,10 +52,8 @@ before analysis.  This project
 
 ### Policy rounds
 
-The Riksbank publishes a fresh set of forecasts four times a year – in
-three **Monetary‑Policy Reports (MPR)** and one shorter **Monetary‑Policy
-Update (MPU)**.  Each publication is labelled `YYYY:I` (e.g. `2025:2` for
-the second release in 2025).  
+The Riksbank publishes a fresh set of forecasts four to five times a year.
+Each publication is labelled `YYYY:I` (e.g. `2025:2` for the second release in 2025).
 
 ### Series identifiers
 
@@ -70,10 +71,20 @@ adjusted (`CA`).  Discover the catalogue with
 GET /forecasts/series_ids
 ```
 
-### Forecast vintages
+### Forecast vintages & observations
 
-Forecasts are delivered **vintage‑style**.  A single series can have
-multiple `vintages`, each tagged with metadata:
+Each **policy round** gives rise to a new “vintage” of forecasts for key
+macroeconomic variables. Meanwhile, as data on actual outcomes get published,
+the Riksbank updates its **realised observations**. This means you can:
+
+- **Pin** a specific policy round (e.g. `"2024:1"`) to see only the forecasts
+  from that round along with any observations available up through that round.
+- Use `"latest"` to retrieve **all historical observations** (the final realised
+  values known today) **plus** the newest forecast vintage. This is ideal for
+  historical analysis—especially if you want to see the final, revised or
+  actual values rather than the older forecasts.
+
+Forecast metadata example:
 
 ```jsonc
 {
@@ -84,18 +95,13 @@ multiple `vintages`, each tagged with metadata:
 }
 ```
 
-`observations` then contain the time‑stamped numbers.
-
-> **Transparency note:** The compilation includes both forecasts and
-> realised outcomes (once Statistics Sweden has published them).
-
 ---
 
 ## How the MCP server works
 
 ### Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │  FastMCP Server (src/riksbank_mcp/server.py)           │
 │                                                         │
@@ -121,82 +127,150 @@ multiple `vintages`, each tagged with metadata:
 
 | Tool | Series ID | Description |
 |------|-----------|-------------|
-| `get_gdp_forecast_data` | `SEQGDPNAYCA` | GDP y/y, calendar‑adjusted |
-| `get_unemployment_forecast_data` | `SEQLABUEASA` | LFS unemployment rate |
-| `get_cpi_forecast_data` | `SEMCPINAYNA` | Headline CPI y/y |
-| … | … | _≈ 30 series in total – run `list_forecast_series_ids()` for the full list._ |
+| `get_gdp_data` | `SEQGDPNAYCA` | GDP y/y, calendar‑adjusted |
+| `get_unemployment_data` | `SEQLABUEASA` | LFS unemployment rate |
+| `get_cpi_data` | `SEMCPINAYNA` | Headline CPI y/y |
+| … | … | _≈ 30 series in total – run `list_series_ids()` for the full list._ |
 
 Each tool signature is:
 
 ```python
-async def get_<series>_forecast_data(policy_round: str | None = None) -> MonetaryPolicyDataResponse
+async def get_<series>_data(policy_round: str | None = None) -> MonetaryPolicyDataResponse
 ```
 
 Pass `policy_round="2024:3"` to pin the vintage; omit for the complete
-history.
+history.  For final historical data, pass `policy_round="latest"` so that
+the tool merges all realised (observed) data points.
 
 ---
 
 ## Installation
 
-### Prerequisites
+> **Prerequisites:**
+> * Python ≥ 3.12 (uses `typing.TypeAlias`/PEP 604 unions)
+> * [Astral `uv`](https://github.com/astral-sh/uv) ≥ 0.2.0
 
-* Python ≥ 3.12 (uses `typing.TypeAlias`/`|` unions)
-* Optional: [poetry](https://python-poetry.org/) or `pipx`
-
-```bash
-pip install riksbank-mcp
-```
-
-### From source
+Clone and set up the project with one command:
 
 ```bash
-git clone https://github.com/aerugo/riksbank-mcp.git
-cd riksbank-mcp
-pip install .[dev]
+uv sync
 ```
+
+`uv sync` installs all production and development dependencies declared in
+`pyproject.toml`, creates a virtual environment if needed, and locks the
+exact versions so every contributor or CI pipeline uses the same stack.
 
 ---
 
-## Quick start
+## Quick‑start
 
 ### 1. Run the server (stdio)
 
 ```bash
-riksbank-mcp | mcp chat
+uv run riksbank_mcp | mcp chat
 ```
 
-### 2. Ask the LLM
+Behind the scenes this starts the MCP server on stdin/stdout so the MCP CLI (or
+an LLM, e.g. ChatGPT via Claude Desktop) can discover and call the tools.
+
+### 2. Ask the LLM
 
 ```
 > What was the Riksbank’s CPIF forecast in policy‑round 2024:1?
 ```
 
-Under the hood the model calls
+Under the hood the model calls:
 
 ```python
-await get_cpif_forecast_data("2024:1")
+await get_cpif_data("2024:1")
 ```
 
-and returns a structured JSON payload.
+and returns a structured JSON payload with both forecast entries (for dates
+after the cutoff) and realised observations (for earlier dates in that round).
 
 ### 3. Use as a library
 
 ```python
 import asyncio
-from riksbank_mcp.tools import get_policy_rate_forecast_data
+from riksbank_mcp.tools import get_policy_rate_data
 
 async def main():
     from riksbank_mcp.query import ForecastRequest
-    req = ForecastRequest(policy_round="2023:4", include_realized=True)
-    data = await get_gdp_forecast_data(req)
-    latest = data.vintages[-1].observations[-1]
-    print(latest.dt, latest.value)
+    req = ForecastRequest(policy_round="2023:4", include_realised=True)
+    data = await get_policy_rate_data(req)
+    print(data.vintages[0].observations[:5])  # first 5 observations
 
 asyncio.run(main())
 ```
 
+Because everything is typed and async, you can integrate the tools directly
+into notebooks, dashboards, or other services.
+
+---
+
+## Docker
+
+The project ships with a multi‑stage Dockerfile that uses `uv` in the final
+layer, so container builds benefit from deterministic dependency resolution.
+
+```bash
+docker build -t riksbank-mcp:latest .
+
+docker run -i --rm riksbank-mcp:latest | mcp chat
+```
+
+If you prefer **Docker Compose** for development, a sample `compose.yaml`
+illustrates how to mount the source directory and hot‑reload changes.
+
+---
+
+## Development
+
+1. **Set up the environment**:
+
+   ```bash
+   uv sync --dev
+   ```
+
+2. **Run the server in dev‑mode with live‑reload** (requires [`mcp dev`](https://github.com/modelcontextprotocol/dev)):
+
+   ```bash
+   uv run mcp dev src/riksbank_mcp/server.py
+   ```
+
+3. **Open the MCP Inspector** to test and debug:
+
+   <http://localhost:5173>
+
+4. **Run the test‑suite** (pytest + asyncio):
+
+   ```bash
+   uv run pytest -q
+   ```
+
+5. **Format & lint** automatically with Ruff:
+
+   ```bash
+   uv run ruff check . --fix
+   ```
+
+---
+
 ## License
 
-Licensed under the **Apache 2.0** license.  See [LICENSE](LICENSE) for
+Licensed under the **Apache 2.0** license. See [`LICENSE`](LICENSE) for the
 full text.
+
+---
+
+## Disclaimers
+
+- This is an **unofficial** MCP server for the Riksbank’s data. The
+  underlying API is subject to change, and this project may not always
+  reflect the latest updates.
+- Sveriges Riksbank has had no involvement in the development of this
+  project. The data is provided "as is" without any warranty of any kind.
+- The Riksbank’s data is subject to its own terms of use. Please refer to
+  the [Riksbank’s API portal](https://developer.api.riksbank.se/) for
+  more information.
+

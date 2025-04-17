@@ -10,33 +10,33 @@ from typing import Any, AsyncIterator
 from mcp.server import FastMCP
 
 from riksbank_mcp.tools.monetary_policy_tools import (
-    get_cpi_forecast_data,
-    get_cpi_index_forecast_data,
-    get_cpi_yoy_forecast_data,
-    get_cpif_ex_energy_forecast_data,
-    get_cpif_ex_energy_index_forecast_data,
-    get_cpif_forecast_data,
-    get_cpif_yoy_forecast_data,
-    get_employed_persons_forecast_data,
-    get_gdp_forecast_data,
-    get_gdp_gap_forecast_data,
-    get_gdp_level_ca_forecast_data,
-    get_gdp_level_na_forecast_data,
-    get_gdp_level_saca_forecast_data,
-    get_gdp_yoy_na_forecast_data,
-    get_gdp_yoy_sa_forecast_data,
-    get_general_government_net_lending_forecast_data,
-    get_hourly_labour_cost_forecast_data,
-    get_hourly_wage_na_forecast_data,
-    get_hourly_wage_nmo_forecast_data,
-    get_labour_force_forecast_data,
-    get_nominal_exchange_rate_kix_index_forecast_data,
-    get_policy_rate_forecast_data,
-    get_population_forecast_data,
-    get_population_level_forecast_data,
-    get_unemployment_forecast_data,
-    list_forecast_series_ids,
-    list_policy_forecast_rounds,
+    get_cpi_data,
+    get_cpi_index_data,
+    get_cpi_yoy_data,
+    get_cpif_data,
+    get_cpif_ex_energy_data,
+    get_cpif_ex_energy_index_data,
+    get_cpif_yoy_data,
+    get_employed_persons_data,
+    get_gdp_data,
+    get_gdp_gap_data,
+    get_gdp_level_ca_data,
+    get_gdp_level_na_data,
+    get_gdp_level_saca_data,
+    get_gdp_yoy_na_data,
+    get_gdp_yoy_sa_data,
+    get_general_government_net_lending_data,
+    get_hourly_labour_cost_data,
+    get_hourly_wage_na_data,
+    get_hourly_wage_nmo_data,
+    get_labour_force_data,
+    get_nominal_exchange_rate_kix_index_data,
+    get_policy_rate_data,
+    get_population_data,
+    get_population_level_data,
+    get_unemployment_data,
+    list_policy_rounds,
+    list_series_ids,
 )
 
 
@@ -85,33 +85,33 @@ mcp = FastMCP(
 )
 
 # Register Monetary Policy tools
-mcp.tool()(get_cpi_forecast_data)
-mcp.tool()(get_cpi_index_forecast_data)
-mcp.tool()(get_cpi_yoy_forecast_data)
-mcp.tool()(get_cpif_ex_energy_forecast_data)
-mcp.tool()(get_cpif_ex_energy_index_forecast_data)
-mcp.tool()(get_cpif_forecast_data)
-mcp.tool()(get_cpif_yoy_forecast_data)
-mcp.tool()(get_employed_persons_forecast_data)
-mcp.tool()(get_gdp_forecast_data)
-mcp.tool()(get_gdp_gap_forecast_data)
-mcp.tool()(get_gdp_level_ca_forecast_data)
-mcp.tool()(get_gdp_level_na_forecast_data)
-mcp.tool()(get_gdp_level_saca_forecast_data)
-mcp.tool()(get_gdp_yoy_na_forecast_data)
-mcp.tool()(get_gdp_yoy_sa_forecast_data)
-mcp.tool()(get_general_government_net_lending_forecast_data)
-mcp.tool()(get_hourly_labour_cost_forecast_data)
-mcp.tool()(get_hourly_wage_na_forecast_data)
-mcp.tool()(get_hourly_wage_nmo_forecast_data)
-mcp.tool()(get_labour_force_forecast_data)
-mcp.tool()(get_nominal_exchange_rate_kix_index_forecast_data)
-mcp.tool()(get_policy_rate_forecast_data)
-mcp.tool()(get_population_forecast_data)
-mcp.tool()(get_population_level_forecast_data)
-mcp.tool()(get_unemployment_forecast_data)
-mcp.tool()(list_forecast_series_ids)
-mcp.tool()(list_policy_forecast_rounds)
+mcp.tool()(get_cpi_data)
+mcp.tool()(get_cpi_index_data)
+mcp.tool()(get_cpi_yoy_data)
+mcp.tool()(get_cpif_ex_energy_data)
+mcp.tool()(get_cpif_ex_energy_index_data)
+mcp.tool()(get_cpif_data)
+mcp.tool()(get_cpif_yoy_data)
+mcp.tool()(get_employed_persons_data)
+mcp.tool()(get_gdp_data)
+mcp.tool()(get_gdp_gap_data)
+mcp.tool()(get_gdp_level_ca_data)
+mcp.tool()(get_gdp_level_na_data)
+mcp.tool()(get_gdp_level_saca_data)
+mcp.tool()(get_gdp_yoy_na_data)
+mcp.tool()(get_gdp_yoy_sa_data)
+mcp.tool()(get_general_government_net_lending_data)
+mcp.tool()(get_hourly_labour_cost_data)
+mcp.tool()(get_hourly_wage_na_data)
+mcp.tool()(get_hourly_wage_nmo_data)
+mcp.tool()(get_labour_force_data)
+mcp.tool()(get_nominal_exchange_rate_kix_index_data)
+mcp.tool()(get_policy_rate_data)
+mcp.tool()(get_population_data)
+mcp.tool()(get_population_level_data)
+mcp.tool()(get_unemployment_data)
+mcp.tool()(list_series_ids)
+mcp.tool()(list_policy_rounds)
 
 
 def main() -> None:
