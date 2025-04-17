@@ -206,7 +206,7 @@ async def get_policy_data(
                     is_fc = date.fromisoformat(dt_str) > cutoff_dt
                 except ValueError:
                     logger.debug(f"Bad observation date '{dt_str}' ignored.")
-            
+
             # map into the new schema -------------------------------
             obs["forecast"] = obs["value"] if is_fc else None
             obs["observation"] = None if is_fc else obs["value"]
