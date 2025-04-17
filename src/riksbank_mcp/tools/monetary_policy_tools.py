@@ -203,6 +203,7 @@ async def get_policy_forecast_data(
                 except ValueError:
                     logger.debug(f"Bad observation date '{dt_str}' ignored.")
             obs["is_forecast"] = is_fc
+            obs["realized"] = obs.get("value")  # NEW – default echo
 
     # Validate after enrichment
     vintages_objs: list[ForecastVintage] = [
