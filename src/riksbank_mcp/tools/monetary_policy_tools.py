@@ -8,6 +8,7 @@ from datetime import date
 from typing import Any
 
 from riksbank_mcp.models import (
+    ForecastObservation,          # NEW
     ForecastVintage,
     MonetaryPolicyDataResponse,
     MonetaryPolicyDataRoundsResponse,
@@ -211,6 +212,14 @@ async def get_policy_data(
             obs["forecast"] = obs["value"] if is_fc else None
             obs["observation"] = None if is_fc else obs["value"]
             obs["realized"] = None if is_fc else obs["value"]
+
+        # -----------------------------------------------------------------
+        # Pydantic‑validate each observation individually
+        # -----------------------------------------------------------------
+        v["observations"] = [
+            ForecastObservation.model_validate(o)           # NEW
+            for o in v.get("observations", [])
+        ]
 
     # Validate after enrichment
     vintages_objs: list[ForecastVintage] = [
