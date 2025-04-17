@@ -4,6 +4,7 @@ Riksbank Monetary‑Policy API helper functions
 """
 
 import logging
+from datetime import date
 from typing import Any
 
 from riksbank_mcp.models import (
@@ -179,6 +180,30 @@ async def get_policy_forecast_data(
     if isinstance(raw_vintages, dict):
         raw_vintages = [raw_vintages]  # type: ignore[assignment]
 
+    for v in raw_vintages:
+        # Determine cut‑off date for this vintage
+        cutoff_str: str | None = (
+            v.get("metadata", {}).get("forecast_cutoff_date")  # type: ignore[index]
+        )
+        cutoff_dt: date | None = None
+        if cutoff_str:
+            try:
+                cutoff_dt = date.fromisoformat(cutoff_str)
+            except ValueError:
+                logger.warning(f"Malformed cutoff date '{cutoff_str}' in vintage.")
+
+        # Annotate each observation
+        for obs in v.get("observations", []):
+            dt_str: str | None = obs.get("dt") or obs.get("date")
+            is_fc = False
+            if cutoff_dt and dt_str:
+                try:
+                    is_fc = date.fromisoformat(dt_str) > cutoff_dt
+                except ValueError:
+                    logger.debug(f"Bad observation date '{dt_str}' ignored.")
+            obs["is_forecast"] = is_fc
+
+    # Validate after enrichment
     vintages_objs: list[ForecastVintage] = [
         ForecastVintage.model_validate(v) for v in raw_vintages  # Pydantic v2
     ]
