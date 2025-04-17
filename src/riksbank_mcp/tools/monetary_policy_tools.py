@@ -7,6 +7,16 @@ import logging
 from datetime import date
 from typing import Any
 
+# ---------------------------------------------------------------------
+# Resolve the most recent policy‑round ID once – used by several helpers
+# ---------------------------------------------------------------------
+async def _latest_round_id() -> str | None:
+    """Return the newest 'YYYY:I' identifier or None if catalogue empty."""
+    rounds = await list_policy_rounds()
+    if not rounds.rounds:
+        return None
+    return max(rounds.rounds, key=lambda r: (r.year, r.iteration)).id
+
 from riksbank_mcp.models import ForecastObservation  # NEW
 from riksbank_mcp.models import (
     ForecastVintage,
@@ -172,6 +182,9 @@ async def get_policy_data(
         ``vintages``).
 
     """
+    # Convert special keyword to actual round ID
+    if policy_round == "latest":
+        policy_round = await _latest_round_id()
     params: dict[str, Any] = {"series": series_id}
     if policy_round:
         params["policy_round_name"] = policy_round
@@ -237,17 +250,22 @@ async def _fetch_series(
     *,
     _fetcher: SeriesFetcher = get_policy_data,
 ) -> MonetaryPolicyDataResponse:
-    base = await _fetcher(series_id, req.policy_round)
+    # --------------------------------------------------------------
+    # Handle keyword "latest" before hitting the API
+    # --------------------------------------------------------------
+    round_name = req.policy_round
+    if round_name == "latest":
+        round_name = await _latest_round_id()
+
+    base = await _fetcher(series_id, round_name)
 
     if req.include_realized:
-        rounds = await list_policy_rounds()
-        if rounds.rounds:
-            latest_round = max(rounds.rounds, key=lambda r: (r.year, r.iteration)).id
-            if latest_round != req.policy_round:
-                latest = await _fetcher(series_id, latest_round)
-                if base.vintages and latest.vintages:
-                    merged = merge_realized(base.vintages[0], latest.vintages[0])
-                    base.vintages[0] = merged
+        latest_round = await _latest_round_id()
+        if latest_round and latest_round != round_name:
+            latest = await _fetcher(series_id, latest_round)
+            if base.vintages and latest.vintages:
+                merged = merge_realized(base.vintages[0], latest.vintages[0])
+                base.vintages[0] = merged
     return base
 
 
