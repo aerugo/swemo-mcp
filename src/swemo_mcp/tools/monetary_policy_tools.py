@@ -19,8 +19,8 @@ async def _latest_round_id() -> str | None:
     return max(rounds.rounds, key=lambda r: (r.year, r.iteration)).id
 
 
-from riksbank_mcp.models import ForecastObservation  # NEW
-from riksbank_mcp.models import (
+from swemo_mcp.models import ForecastObservation  # NEW
+from swemo_mcp.models import (
     ForecastVintage,
     MonetaryPolicyDataResponse,
     MonetaryPolicyDataRoundsResponse,
@@ -28,9 +28,9 @@ from riksbank_mcp.models import (
     PolicyRound,
     SeriesInfo,
 )
-from riksbank_mcp.query import ForecastRequest
-from riksbank_mcp.services.monetary_policy_api import riksbanken_request
-from riksbank_mcp.utils.realized_merge import SeriesFetcher, merge_realized
+from swemo_mcp.query import ForecastRequest
+from swemo_mcp.services.monetary_policy_api import riksbanken_request
+from swemo_mcp.utils.realized_merge import SeriesFetcher, merge_realized
 
 logger = logging.getLogger(__name__)
 

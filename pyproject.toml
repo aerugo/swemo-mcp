@@ -1,5 +1,5 @@
 [project]
-name = "riksbank-mcp"
+name = "swemo-mcp"
 version = "0.1.0"
 description = "An MCP Server for Riksbank data (monetary policy, SWEA, SWESTR)."
 readme = "README.md"
@@ -39,10 +39,10 @@ disallow_untyped_defs = true
 disallow_incomplete_defs = true
 
 [project.urls]
-"Homepage" = "https://github.com/aerugo/riksbank-mcp"
-"Bug Tracker" = "https://github.com/aerugo/riksbank-mcp/issues"
+"Homepage" = "https://github.com/aerugo/swemo-mcp"
+"Bug Tracker" = "https://github.com/aerugo/swemo-mcp/issues"
 
 [project.scripts]
-riksbank-mcp = "riksbank_mcp:main"
+swemo-mcp = "swemo_mcp:main"
 
 

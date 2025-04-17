@@ -9,7 +9,7 @@ from typing import Any, AsyncIterator
 
 from mcp.server import FastMCP
 
-from riksbank_mcp.tools.monetary_policy_tools import (
+from swemo_mcp.tools.monetary_policy_tools import (
     get_cpi_data,
     get_cpi_index_data,
     get_cpi_yoy_data,
@@ -51,30 +51,30 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
     context_data: dict[str, Any] = {}  # Populate with any needed data
 
     print(
-        "[Riksbank MCP Lifespan] Initialization complete. All data cached.",
+        "[Swemo MCP Lifespan] Initialization complete. All data cached.",
         file=sys.stderr,
     )
-    print("[Riksbank MCP Lifespan] Yielding context...", file=sys.stderr)
+    print("[Swemo MCP Lifespan] Yielding context...", file=sys.stderr)
 
     try:
         yield context_data
         print(
-            "[Riksbank MCP Lifespan] Post-yield (server shutting down)...",
+            "[Swemo MCP Lifespan] Post-yield (server shutting down)...",
             file=sys.stderr,
         )
     except Exception as e:
         print(
-            f"[Riksbank MCP Lifespan] Exception DURING yield/server run?: {e}",
+            f"[Swemo MCP Lifespan] Exception DURING yield/server run?: {e}",
             file=sys.stderr,
         )
         traceback.print_exc(file=sys.stderr)
         raise
     finally:
         print(
-            "[Riksbank MCP Lifespan] Entering finally block (shutdown).",
+            "[Swemo MCP Lifespan] Entering finally block (shutdown).",
             file=sys.stderr,
         )
-        print("[Riksbank MCP] Shutting down.", file=sys.stderr)
+        print("[Swemo MCP] Shutting down.", file=sys.stderr)
 
 
 mcp = FastMCP(
@@ -121,15 +121,15 @@ def main() -> None:
     import sys
     import traceback
 
-    print("[Riksbank MCP] Starting server on stdio...", file=sys.stderr)
+    print("[Swemo MCP] Starting server on stdio...", file=sys.stderr)
     try:
         mcp.run("stdio")
-        print("[Riksbank MCP] Finished cleanly.", file=sys.stderr)
+        print("[Swemo MCP] Finished cleanly.", file=sys.stderr)
     except Exception as e:
-        print(f"[Riksbank MCP] EXCEPTION: {e}", file=sys.stderr)
+        print(f"[Swemo MCP] EXCEPTION: {e}", file=sys.stderr)
         traceback.print_exc(file=sys.stderr)
     finally:
-        print("[Riksbank MCP] Exiting.", file=sys.stderr)
+        print("[Swemo MCP] Exiting.", file=sys.stderr)
 
 
 if __name__ == "__main__":

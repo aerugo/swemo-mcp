@@ -25,4 +25,4 @@ RUN pip install --no-cache-dir dist/*.whl
 EXPOSE 8000
 
 # The default command to run the server
-CMD ["riksbank-mcp"]
+CMD ["swemo-mcp"]

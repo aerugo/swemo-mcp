@@ -1,12 +1,11 @@
-# Swedish Monetary‑Policy Data MCP Server
+# SwemoMCP: A Swedish Monetary‑Policy Data MCP Server
 
 [![License: Apache‑2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![https://modelcontextprotocol.io](https://badge.mcpx.dev?type=server 'MCP Server')](https://modelcontextprotocol.io)
 
-> **Access Swedish monetary‑policy forecasts & realised historical data _as code_.**
+SwemoMCO is an unofficial **Monetary‑Policy Data MCP Server** wraps Sveriges Riksbank’s open API in a [Model‑Context‑Protocol](https://modelcontextprotocol.io/) (MCP) micro‑service.  It turns the raw REST end‑points into **typed Python tools** that can be invoked by LLMs or by humans through any MCP Client.
 
-An unofficial **Monetary‑Policy Data MCP Server** wraps Sveriges Riksbank’s open API (2020 → present) in a [Model‑Context‑Protocol](https://modelcontextprotocol.io/) (MCP) micro‑service.  It turns the raw REST end‑points into **typed Python tools** that can be invoked by LLMs or by humans through the [MCP CLI](https://github.com/modelcontext/mcp-cli).
-
-This edition of the README assumes you are using **[Astral’s `uv`](https://github.com/astral-sh/uv)** for dependency management and execution – exactly the same workflow as the Kolada MCP Server.
+This edition of the README assumes you are using **[Astral’s `uv`](https://github.com/astral-sh/uv)** for dependency management and execution.
 
 ---
 
@@ -103,7 +102,7 @@ Forecast metadata example:
 
 ```text
 ┌─────────────────────────────────────────────────────────┐
-│  FastMCP Server (src/riksbank_mcp/server.py)           │
+│  FastMCP Server (src/swemo_mcp/server.py)           │
 │                                                         │
 │  • registers ≈30 *tools* (one per economic series)       │
 │  • exposes them on stdio / SSE / HTTP                   │
@@ -162,40 +161,58 @@ exact versions so every contributor or CI pipeline uses the same stack.
 
 ---
 
-## Quick‑start
+## Claude Desktop Integration
 
-### 1. Run the server (stdio)
+Edit your `claude_desktop_config.json` to add Kolada MCP Server:
 
-```bash
-uv run riksbank_mcp | mcp chat
+### Docker Image (Local Build)
+```json
+"SwemoMCP": {
+  "args": [
+    "run",
+    "-i",
+    "--rm",
+    "--name",
+    "swemo-mcp-managed",
+    "swemo-mcp:local"
+  ],
+  "command": "docker",
+  "env": {}
+}
 ```
 
-Behind the scenes this starts the MCP server on stdin/stdout so the MCP CLI (or
-an LLM, e.g. ChatGPT via Claude Desktop) can discover and call the tools.
-
-### 2. Ask the LLM
-
-```
-> What was the Riksbank’s CPIF forecast in policy‑round 2024:1?
-```
-
-Under the hood the model calls:
-
-```python
-await get_cpif_data("2024:1")
+### Prebuilt Container via PyPI
+```json
+"SwemoPyPI": {
+  "args": ["swemo-mcp"],
+  "command": "/Users/hugi/.cargo/bin/uvx"
+}
 ```
 
-and returns a structured JSON payload with both forecast entries (for dates
-after the cutoff) and realised observations (for earlier dates in that round).
+### Local UV Execution (without Docker)
+Replace `[path to kolada-mcp]` with your local directory:
+```json
+"SwemoLocal": {
+  "args": [
+    "--directory",
+    "[path to kolada-mcp]/src/kolada_mcp",
+    "run",
+    "kolada-mcp"
+  ],
+  "command": "uv"
+}
+```
 
-### 3. Use as a library
+Restart Claude Desktop after updating.
+
+## Use as a library
 
 ```python
 import asyncio
-from riksbank_mcp.tools import get_policy_rate_data
+from swemo_mcp.tools import get_policy_rate_data
 
 async def main():
-    from riksbank_mcp.query import ForecastRequest
+    from swemo_mcp.query import ForecastRequest
     req = ForecastRequest(policy_round="2023:4", include_realised=True)
     data = await get_policy_rate_data(req)
     print(data.vintages[0].observations[:5])  # first 5 observations
@@ -214,9 +231,9 @@ The project ships with a multi‑stage Dockerfile that uses `uv` in the final
 layer, so container builds benefit from deterministic dependency resolution.
 
 ```bash
-docker build -t riksbank-mcp:latest .
+docker build -t swemo-mcp:latest .
 
-docker run -i --rm riksbank-mcp:latest | mcp chat
+docker run -i --rm swemo-mcp:latest | mcp chat
 ```
 
 If you prefer **Docker Compose** for development, a sample `compose.yaml`
@@ -235,7 +252,7 @@ illustrates how to mount the source directory and hot‑reload changes.
 2. **Run the server in dev‑mode with live‑reload** (requires [`mcp dev`](https://github.com/modelcontextprotocol/dev)):
 
    ```bash
-   uv run mcp dev src/riksbank_mcp/server.py
+   uv run mcp dev src/swemo_mcp/server.py
    ```
 
 3. **Open the MCP Inspector** to test and debug:

@@ -4,7 +4,7 @@ from datetime import date
 from itertools import chain
 from typing import Protocol, runtime_checkable
 
-from riksbank_mcp.models import (
+from swemo_mcp.models import (
     ForecastObservation,
     ForecastVintage,
     MonetaryPolicyDataResponse,
