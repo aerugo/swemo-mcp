@@ -15,9 +15,31 @@ from riksbank_mcp.models import (
     PolicyRound,
     SeriesInfo,
 )
+from riksbank_mcp.query import ForecastRequest                   # NEW
 from riksbank_mcp.services.monetary_policy_api import riksbanken_request
+from riksbank_mcp.utils.realized_merge import merge_realized, SeriesFetcher  # NEW
 
 logger = logging.getLogger(__name__)
+
+
+async def _fetch_series(
+    series_id: str,
+    req: ForecastRequest,
+    *,
+    _fetcher: SeriesFetcher = get_policy_forecast_data,
+) -> MonetaryPolicyDataResponse:
+    base = await _fetcher(series_id, req.policy_round)
+
+    if req.include_realized:
+        rounds = await list_policy_forecast_rounds()
+        if rounds.rounds:
+            latest_round = max(rounds.rounds, key=lambda r: (r.year, r.iteration)).id
+            if latest_round != req.policy_round:
+                latest = await _fetcher(series_id, latest_round)
+                if base.vintages and latest.vintages:
+                    merged = merge_realized(base.vintages[0], latest.vintages[0])
+                    base.vintages[0] = merged
+    return base
 
 
 ___all__ = [
@@ -344,7 +366,7 @@ async def get_hourly_wage_nmo_forecast_data(
 
 
 async def get_population_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest = ForecastRequest(),
 ) -> MonetaryPolicyDataResponse:
     """Population level forecast (total population).
 
@@ -353,7 +375,7 @@ async def get_population_forecast_data(
     Measured in *thousands of persons*.  Combine with GDP for per‑capita
     analyses.
     """
-    return await get_policy_forecast_data("SEPOPYRCA", policy_round)
+    return await _fetch_series("SEPOPYRCA", req)
 
 
 async def get_employed_persons_forecast_data(
@@ -417,14 +439,14 @@ async def get_policy_rate_forecast_data(
 
 
 async def get_general_government_net_lending_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest = ForecastRequest(),
 ) -> MonetaryPolicyDataResponse:
     """General‑government net lending (% of GDP).
     Unit: Percent of GDP.
 
     Series ID: ``SEAPBSNAYNA``.
     """
-    return await get_policy_forecast_data("SEAPBSNAYNA", policy_round)
+    return await _fetch_series("SEAPBSNAYNA", req)
 
 
 # ──────────────── GDP level variants (calendar / seasonal adj.) ───────────────
@@ -514,13 +536,13 @@ async def get_gdp_yoy_sa_forecast_data(
 
 
 async def get_gdp_yoy_na_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest = ForecastRequest(),
 ) -> MonetaryPolicyDataResponse:
     """GDP y/y growth, **non‑adjusted (NSA)**.
 
     Series ID: ``SEQGDPNAYNA``.
     """
-    return await get_policy_forecast_data("SEQGDPNAYNA", policy_round)
+    return await _fetch_series("SEQGDPNAYNA", req)
 
 
 # ─────────────────────────────── CPI level/changes ───────────────────────────
@@ -537,26 +559,26 @@ async def get_cpi_index_forecast_data(
 
 
 async def get_cpi_yoy_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest = ForecastRequest(),
 ) -> MonetaryPolicyDataResponse:
     """CPI y/y inflation (headline).
 
     Series ID: ``SEMCPINAYNA``.
     """
-    return await get_policy_forecast_data("SEMCPINAYNA", policy_round)
+    return await _fetch_series("SEMCPINAYNA", req)
 
 
 # ─────────────────────────────── CPIF variants ───────────────────────────────
 
 
 async def get_cpif_yoy_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest = ForecastRequest(),
 ) -> MonetaryPolicyDataResponse:
     """CPIF y/y inflation—the **target variable**.
 
     Series ID: ``SEMCPIFNAYNA``.
     """
-    return await get_policy_forecast_data("SEMCPIFNAYNA", policy_round)
+    return await _fetch_series("SEMCPIFNAYNA", req)
 
 
 async def get_cpif_ex_energy_index_forecast_data(

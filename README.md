@@ -187,7 +187,9 @@ import asyncio
 from riksbank_mcp.tools import get_policy_rate_forecast_data
 
 async def main():
-    data = await get_policy_rate_forecast_data("2025:1")
+    from riksbank_mcp.query import ForecastRequest
+    req = ForecastRequest(policy_round="2023:4", include_realized=True)
+    data = await get_gdp_forecast_data(req)
     latest = data.vintages[-1].observations[-1]
     print(latest.dt, latest.value)
 
