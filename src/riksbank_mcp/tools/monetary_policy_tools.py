@@ -7,8 +7,8 @@ import logging
 from datetime import date
 from typing import Any
 
+from riksbank_mcp.models import ForecastObservation  # NEW
 from riksbank_mcp.models import (
-    ForecastObservation,          # NEW
     ForecastVintage,
     MonetaryPolicyDataResponse,
     MonetaryPolicyDataRoundsResponse,
@@ -217,7 +217,7 @@ async def get_policy_data(
         # Pydantic‑validate each observation individually
         # -----------------------------------------------------------------
         v["observations"] = [
-            ForecastObservation.model_validate(o)           # NEW
+            ForecastObservation.model_validate(o)  # NEW
             for o in v.get("observations", [])
         ]
 
