@@ -56,11 +56,11 @@ class ForecastObservation(BaseModel):
         description="True → value lies strictly after the vintage's "
         "forecast_cutoff_date; False → realised (history).",
     )
-    realized: float = Field(
-        ...,
+    realized: float | None = Field(
+        None,
         description=(
             "For forecasts: realised outcome from latest vintage if available, "
-            "otherwise equals `value`.  For historical observations "
+            "otherwise null.  For historical observations "
             "(is_forecast == False) it always equals `value`."
         ),
     )

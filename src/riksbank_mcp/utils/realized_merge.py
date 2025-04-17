@@ -32,7 +32,7 @@ def merge_realized(base: ForecastVintage, latest: ForecastVintage) -> ForecastVi
     enriched_base: list[ForecastObservation] = []
     for obs in base.observations:
         realized_val = (
-            realized_map.get(obs.dt, obs.value) if obs.is_forecast else obs.value
+            realized_map.get(obs.dt) if obs.is_forecast else obs.value
         )
         enriched_base.append(
             ForecastObservation.model_validate(
