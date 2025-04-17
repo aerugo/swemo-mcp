@@ -61,14 +61,6 @@ class ForecastObservation(BaseModel):
         None,
         description="If this row is an out‑turn observation: same as `value`, else null.",
     )
-    realized: float | None = Field(
-        None,
-        description=(
-            "For forecasts: realised outcome from latest vintage if available, "
-            "otherwise null.  For historical observations "
-            "(is_forecast == False) it always equals `value`."
-        ),
-    )
 
 
 class ForecastVintage(BaseModel):

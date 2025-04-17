@@ -211,7 +211,6 @@ async def get_policy_data(
             # map into the new schema -------------------------------
             obs["forecast"] = obs["value"] if is_fc else None
             obs["observation"] = None if is_fc else obs["value"]
-            obs["realized"] = None if is_fc else obs["value"]
 
         # -----------------------------------------------------------------
         # Pydantic‑validate each observation individually
