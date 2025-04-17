@@ -1,4 +1,4 @@
-# SwemoMCP: A Swedish Monetary‑Policy Data MCP Server
+# A Swedish Monetary‑Policy Data MCP Server
 
 [![License: Apache‑2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![https://modelcontextprotocol.io](https://badge.mcpx.dev?type=server 'MCP Server')](https://modelcontextprotocol.io)
