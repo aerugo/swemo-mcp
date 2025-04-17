@@ -102,9 +102,9 @@ Forecast metadata example:
 
 ```text
 ┌─────────────────────────────────────────────────────────┐
-│  FastMCP Server (src/swemo_mcp/server.py)           │
+│  FastMCP Server (src/swemo_mcp/server.py)               │
 │                                                         │
-│  • registers ≈30 *tools* (one per economic series)       │
+│  • registers ≈30 *tools* (one per economic series)      │
 │  • exposes them on stdio / SSE / HTTP                   │
 └───────────────▲──────────────────────────────▲──────────┘
                 │                              │
