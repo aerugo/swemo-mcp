@@ -21,6 +21,21 @@ from riksbank_mcp.utils.realized_merge import SeriesFetcher, merge_realized
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------
+# One‑liner shown to every LLM so it knows how to pass the argument.
+# ---------------------------------------------------------------------
+LLM_REQ_NOTE: str = """
+
+LLM call format
+---------------
+Invoke the tool with one **JSON object** as argument, e.g.:
+
+    {"policy_round": "2022:1", "include_realized": true}
+
+• Omit `"policy_round"` to retrieve every vintage.  
+• Set `"include_realized": true` to append realised (out‑turn) values.
+"""
+
 ___all__ = [
     "list_policy_forecast_rounds",
     "list_forecast_series_ids",
