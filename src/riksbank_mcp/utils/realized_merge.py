@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from itertools import chain
 from typing import Protocol, runtime_checkable
 
@@ -12,55 +13,53 @@ from riksbank_mcp.models import (
 
 def merge_realized(base: ForecastVintage, latest: ForecastVintage) -> ForecastVintage:
     """
-    Keep every original observation (history + forecasts) and add a
-    `realized` companion value.
-
-    • For each *forecast* in the base vintage, try to pull the realised
-      outcome of the same date from the latest vintage.
-    • For historical observations, `realized` simply repeats `value`.
-    • Realised observations that are **not** present in the base vintage
-      (because the date lay beyond the original cut‑off) are appended as
-      separate rows (is_forecast == False).
+    Enrich `base` so that every forecast row also carries its realised value
+    (if now known) **without discarding the original forecast**.
     """
-    # ---------- map date → realised value from the latest vintage ----------
+    cut = base.metadata.forecast_cutoff_date
+
+    # map date → realised outcome from latest vintage (only observational rows)
     realized_map: dict[str, float] = {
-        o.dt: o.value for o in latest.observations if not o.is_forecast
+        o.dt: o.value
+        for o in latest.observations
+        if (o.observation is not None) and (date.fromisoformat(o.dt) > cut)
     }
 
-    # ---------- enrich every base observation ----------
-    enriched_base: list[ForecastObservation] = []
-    for obs in base.observations:
-        realized_val = realized_map.get(obs.dt) if obs.is_forecast else obs.value
-        enriched_base.append(
+    enriched: list[ForecastObservation] = []
+    for o in base.observations:
+        realized_val = (
+            realized_map.get(o.dt) if o.forecast is not None else o.value
+        )
+        enriched.append(
             ForecastObservation.model_validate(
                 {
-                    "dt": obs.dt,
-                    "value": obs.value,
-                    "is_forecast": obs.is_forecast,
+                    "dt": o.dt,
+                    "value": o.value,
+                    "forecast": o.forecast,
+                    "observation": o.observation,
                     "realized": realized_val,
                 }
             )
         )
 
-    # ---------- add realised observations missing from base ----------
+    # add observational rows that were absent from the base vintage
     base_dates = {o.dt for o in base.observations}
-    extra_realized: list[ForecastObservation] = [
+    tail: list[ForecastObservation] = [
         ForecastObservation.model_validate(
             {
                 "dt": o.dt,
                 "value": o.value,
-                "is_forecast": False,
+                "forecast": None,
+                "observation": o.value,
                 "realized": o.value,
             }
         )
         for o in latest.observations
-        if (not o.is_forecast) and (o.dt not in base_dates)
+        if (o.observation is not None) and (o.dt not in base_dates)
     ]
 
-    # ---------- combine & sort chronologically ----------
-    combined = sorted(chain(enriched_base, extra_realized), key=lambda o: o.dt)
-
-    return base.model_copy(update={"observations": list(combined)})
+    combined = sorted(chain(enriched, tail), key=lambda r: r.dt)
+    return base.model_copy(update={"observations": combined})
 
 
 @runtime_checkable

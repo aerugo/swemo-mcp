@@ -50,11 +50,15 @@ class ForecastObservation(BaseModel):
     dt: str = Field(
         ..., description="Date of the forecasted observation in YYYY-MM-DD format"
     )
-    value: float = Field(..., description="Value of the forecasted observation")
-    is_forecast: bool = Field(
-        ...,
-        description="True → value lies strictly after the vintage's "
-        "forecast_cutoff_date; False → realised (history).",
+    value: float = Field(..., description="Raw numeric value (either forecast or outcome)")
+
+    # NEW – mutually‑exclusive twin columns
+    forecast: float | None = Field(
+        None, description="If this row is a forecast: same as `value`, else null."
+    )
+    observation: float | None = Field(
+        None,
+        description="If this row is an out‑turn observation: same as `value`, else null.",
     )
     realized: float | None = Field(
         None,
