@@ -24,47 +24,36 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------
 # One‑liner shown to every LLM so it knows how to pass the argument.
 # ---------------------------------------------------------------------
-LLM_REQ_NOTE: str = """
-
-LLM call format
----------------
-Invoke the tool with one **JSON object** as argument, e.g.:
-
-    {"policy_round": "2022:1", "include_realized": true}
-
-• Omit `"policy_round"` to retrieve every vintage.  
-• Set `"include_realized": true` to append realised (out‑turn) values.
-"""
 
 ___all__ = [
-    "list_policy_forecast_rounds",
-    "list_forecast_series_ids",
-    "get_policy_forecast_data",
-    "get_gdp_forecast_data",
-    "get_unemployment_forecast_data",
-    "get_cpi_forecast_data",
-    "get_cpif_forecast_data",
-    "get_cpif_ex_energy_forecast_data",
-    "get_hourly_labour_cost_forecast_data",
-    "get_hourly_wage_na_forecast_data",
-    "get_hourly_wage_nmo_forecast_data",
-    "get_population_forecast_data",
-    "get_employed_persons_forecast_data",
-    "get_labour_force_forecast_data",
-    "get_gdp_gap_forecast_data",
-    "get_policy_rate_forecast_data",
-    "get_general_government_net_lending_forecast_data",
-    "get_gdp_level_saca_forecast_data",
-    "get_gdp_level_ca_forecast_data",
-    "get_gdp_level_na_forecast_data",
-    "get_gdp_yoy_sa_forecast_data",
-    "get_gdp_yoy_na_forecast_data",
-    "get_cpi_index_forecast_data",
-    "get_cpi_yoy_forecast_data",
-    "get_cpif_yoy_forecast_data",
-    "get_cpif_ex_energy_index_forecast_data",
-    "get_nominal_exchange_rate_kix_index_forecast_data",
-    "get_population_level_forecast_data",
+    "list_policy_rounds",
+    "list_series_ids",
+    "get_policy_data",
+    "get_gdp_data",
+    "get_unemployment_data",
+    "get_cpi_data",
+    "get_cpif_data",
+    "get_cpif_ex_energy_data",
+    "get_hourly_labour_cost_data",
+    "get_hourly_wage_na_data",
+    "get_hourly_wage_nmo_data",
+    "get_population_data",
+    "get_employed_persons_data",
+    "get_labour_force_data",
+    "get_gdp_gap_data",
+    "get_policy_rate_data",
+    "get_general_government_net_lending_data",
+    "get_gdp_level_saca_data",
+    "get_gdp_level_ca_data",
+    "get_gdp_level_na_data",
+    "get_gdp_yoy_sa_data",
+    "get_gdp_yoy_na_data",
+    "get_cpi_index_data",
+    "get_cpi_yoy_data",
+    "get_cpif_yoy_data",
+    "get_cpif_ex_energy_index_data",
+    "get_nominal_exchange_rate_kix_index_data",
+    "get_population_level_data",
 ]
 
 # =============================================================================
@@ -72,7 +61,7 @@ ___all__ = [
 # =============================================================================
 
 
-async def list_policy_forecast_rounds() -> MonetaryPolicyDataRoundsResponse:
+async def list_policy_rounds() -> MonetaryPolicyDataRoundsResponse:
     """Return a catalogue of **monetary‑policy rounds** published by the Riksbank.
 
     A *policy round* designates a discrete set of forecasts typically
@@ -116,7 +105,7 @@ async def list_policy_forecast_rounds() -> MonetaryPolicyDataRoundsResponse:
     return MonetaryPolicyDataRoundsResponse(rounds=rounds)
 
 
-async def list_forecast_series_ids() -> MonetaryPolicyDataSeriesResponse:
+async def list_series_ids() -> MonetaryPolicyDataSeriesResponse:
     """List **all** series metadata available via the Monetary‑policy API.
 
     Use this when you need to discover *which* identifier corresponds to a
@@ -159,7 +148,7 @@ async def list_forecast_series_ids() -> MonetaryPolicyDataSeriesResponse:
 # =============================================================================
 
 
-async def get_policy_forecast_data(
+async def get_policy_data(
     series_id: str, policy_round: str | None = None
 ) -> MonetaryPolicyDataResponse:
     """Low‑level fetcher for any *forecast* series.
@@ -194,7 +183,7 @@ async def get_policy_forecast_data(
     raw = items[0]
     raw_vintages: list[dict[str, Any]] = raw.get("vintages", [])
     if isinstance(raw_vintages, dict):
-        raw_vintages = [raw_vintages]  # type: ignore[assignment]
+        raw_vintages = [raw_vintages]
 
     for v in raw_vintages:
         # Determine cut‑off date for this vintage
@@ -218,13 +207,11 @@ async def get_policy_forecast_data(
                 except ValueError:
                     logger.debug(f"Bad observation date '{dt_str}' ignored.")
             obs["is_forecast"] = is_fc
-            obs["realized"] = (
-                obs.get("value") if not is_fc else None  # historique ⇒ valeur, forecast ⇒ null
-            )
+            obs["realized"] = obs.get("value") if not is_fc else None
 
     # Validate after enrichment
     vintages_objs: list[ForecastVintage] = [
-        ForecastVintage.model_validate(v) for v in raw_vintages  # Pydantic v2
+        ForecastVintage.model_validate(v) for v in raw_vintages
     ]
 
     return MonetaryPolicyDataResponse(
@@ -237,12 +224,12 @@ async def _fetch_series(
     series_id: str,
     req: ForecastRequest,
     *,
-    _fetcher: SeriesFetcher = get_policy_forecast_data,
+    _fetcher: SeriesFetcher = get_policy_data,
 ) -> MonetaryPolicyDataResponse:
     base = await _fetcher(series_id, req.policy_round)
 
     if req.include_realized:
-        rounds = await list_policy_forecast_rounds()
+        rounds = await list_policy_rounds()
         if rounds.rounds:
             latest_round = max(rounds.rounds, key=lambda r: (r.year, r.iteration)).id
             if latest_round != req.policy_round:
@@ -263,15 +250,22 @@ async def _fetch_series(
 # ─────────────────────────────── Real Economy ────────────────────────────────
 
 
-async def get_gdp_forecast_data(
+async def get_gdp_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     Gross Domestic Product, **calendar‑adjusted y/y growth**
     *(Series ID: `SEQGDPNAYCA`)*.
 
-    **When to use**
-    ----------------
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
+
     Use this series when you want growth rates that are **directly
     comparable across calendar quarters**—for instance in event–study
     regressions around GDP‑release days.
@@ -284,7 +278,7 @@ async def get_gdp_forecast_data(
     return await _fetch_series("SEQGDPNAYCA", req)
 
 
-async def get_unemployment_forecast_data(
+async def get_unemployment_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
@@ -292,11 +286,20 @@ async def get_unemployment_forecast_data(
     Unit: **percent of labour force**.
     Note: Seasonally adjusted series.
     *(Series ID: `SEQLABUEASA`)*.
+
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
     """
     return await _fetch_series("SEQLABUEASA", req)
 
 
-async def get_cpi_forecast_data(
+async def get_cpi_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
@@ -304,12 +307,21 @@ async def get_cpi_forecast_data(
     Unit: Annual percentage change.
     *(Series ID: `SEMCPINAYNA`)*.
 
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
+
     Reference rate for **wage and rent indexation clauses** in Sweden.
     """
     return await _fetch_series("SEMCPINAYNA", req)
 
 
-async def get_cpif_forecast_data(
+async def get_cpif_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
@@ -321,11 +333,20 @@ async def get_cpif_forecast_data(
     developments for various sub-groups of the CPIF.
     Unit: Annual percentage change.
     *(Series ID: `SEMCPIFNAYNA`)*.
+
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
     """
     return await _fetch_series("SEMCPIFNAYNA", req)
 
 
-async def get_cpif_ex_energy_forecast_data(
+async def get_cpif_ex_energy_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
@@ -336,11 +357,20 @@ async def get_cpif_ex_energy_forecast_data(
     in the measured inflation rate than the other components do.
     The CPIF excluding energy is an example of such a measure.
     *(Series ID: `SEMCPIFFEXYNA`)*.
+
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
     """
     return await _fetch_series("SEMCPIFFEXYNA", req)
 
 
-async def get_hourly_labour_cost_forecast_data(
+async def get_hourly_labour_cost_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
@@ -348,12 +378,21 @@ async def get_hourly_labour_cost_forecast_data(
     Unit: Annual percentage change.
     *(Series ID: `SEACOMNAYCA`)*.
 
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
+
     Key ingredient in **unit‑labour‑cost (ULC)** calculations: combine with GDP per hour to diagnose competitiveness.
     """
     return await _fetch_series("SEACOMNAYCA", req)
 
 
-async def get_hourly_wage_na_forecast_data(
+async def get_hourly_wage_na_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
@@ -362,18 +401,36 @@ async def get_hourly_wage_na_forecast_data(
     Note: Calendar adjusted series.
     *(Series ID: `SEAWAGNAYCA`)*.
 
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
+
     Evaluate **labour‑share dynamics**: pair with GDP at factor cost to see if wage income keeps up with productivity.
     """
     return await _fetch_series("SEAWAGNAYCA", req)
 
 
-async def get_hourly_wage_nmo_forecast_data(
+async def get_hourly_wage_nmo_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     Hourly wage, **National Mediation Office (NMO) measure**, y/y
     Unit: Annual percentage change.
     *(Series ID: `SEAWAGKLYNA`)*.
+
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
 
     Note that coverage is narrower (collectively‑agreed sectors), so match
     sample carefully in microdata studies.
@@ -382,12 +439,21 @@ async def get_hourly_wage_nmo_forecast_data(
     return await _fetch_series("SEAWAGKLYNA", req)
 
 
-async def get_population_forecast_data(
+async def get_population_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """Population level forecast (total population).
 
     Series ID: ``SEQPOPNAANA``.
+
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
 
     Measured in *thousands of persons*.  Combine with GDP for per‑capita
     analyses.
@@ -395,19 +461,28 @@ async def get_population_forecast_data(
     return await _fetch_series("SEPOPYRCA", req)
 
 
-async def get_employed_persons_forecast_data(
+async def get_employed_persons_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     Number of **employed persons (LFS)**, seasonally adjusted
     Unit: Thousands of persons.
     *(Series ID: `SEQLABEPASA`)*.
+
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
     """
 
     return await _fetch_series("SEQLABEPASA", req)
 
 
-async def get_labour_force_forecast_data(
+async def get_labour_force_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
@@ -415,13 +490,22 @@ async def get_labour_force_forecast_data(
     Unit: Thousands of persons.
     *(Series ID: `SEQLABLFASA`)*.
 
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
+
     Denominator for **participation‑rate** calculations: employment / labour force.
     Seasonal adjustment makes the series smoother than the raw LFS count.
     """
     return await _fetch_series("SEQLABLFASA", req)
 
 
-async def get_gdp_gap_forecast_data(
+async def get_gdp_gap_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
@@ -430,6 +514,15 @@ async def get_gdp_gap_forecast_data(
     Unit: Percent of potential output.
     *(Series ID: `SEQGDPGAPYSA`)*.
 
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
+
     **Note:** The Riksbank’s gap estimate embeds its own filter
     assumptions; results can differ from other estimates (e.g. OECD).
     """
@@ -437,7 +530,7 @@ async def get_gdp_gap_forecast_data(
     return await _fetch_series("SEQGDPGAPYSA", req)
 
 
-async def get_policy_rate_forecast_data(
+async def get_policy_rate_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
@@ -450,16 +543,34 @@ async def get_policy_rate_forecast_data(
 
     *(Series ID: `SEQRATENAYNA`)*.
 
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
+
 
     """
     return await _fetch_series("SEQRATENAYNA", req)
 
 
-async def get_general_government_net_lending_forecast_data(
+async def get_general_government_net_lending_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """General‑government net lending (% of GDP).
     Unit: Percent of GDP.
+
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
 
     Series ID: ``SEAPBSNAYNA``.
     """
@@ -469,7 +580,7 @@ async def get_general_government_net_lending_forecast_data(
 # ──────────────── GDP level variants (calendar / seasonal adj.) ───────────────
 
 
-async def get_gdp_level_saca_forecast_data(
+async def get_gdp_level_saca_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
@@ -477,6 +588,15 @@ async def get_gdp_level_saca_forecast_data(
 
     **Unit**: million SEK, constant (chain‑linked) prices
     **Series ID**: `SEQGDPNAASA`
+
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
 
     **What is adjusted?**
     • *Seasonal adjustment* removes predictable intra‑year production swings –
@@ -492,7 +612,7 @@ async def get_gdp_level_saca_forecast_data(
     return await _fetch_series("SEQGDPNAASA", req)
 
 
-async def get_gdp_level_ca_forecast_data(
+async def get_gdp_level_ca_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
@@ -500,6 +620,15 @@ async def get_gdp_level_ca_forecast_data(
 
     **Unit**: million SEK, constant (chain‑linked) prices
     **Series ID**: `SEQGDPNAACA`
+
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
 
     **What is adjusted?**
     • *Calendar adjustment only* – effects from varying working‑day counts,
@@ -515,7 +644,7 @@ async def get_gdp_level_ca_forecast_data(
     return await _fetch_series("SEQGDPNAACA", req)
 
 
-async def get_gdp_level_na_forecast_data(
+async def get_gdp_level_na_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
@@ -531,12 +660,21 @@ async def get_gdp_level_na_forecast_data(
     return await _fetch_series("SEQGDPNAANA", req)
 
 
-async def get_gdp_yoy_sa_forecast_data(
+async def get_gdp_yoy_sa_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     GDP **y/y growth, seasonally *and* calendar‑adjusted**
     *(Series ID: `SEQGDPNAYSA`)*.
+
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
 
     **When to use**
     ----------------
@@ -547,15 +685,24 @@ async def get_gdp_yoy_sa_forecast_data(
     • Structural models that assume residuals are i.i.d. over the year.
 
     If you care about the precise wording used by Statistics Sweden on
-    release day, use :func:`get_gdp_forecast_data` instead (calendar‑adjusted only).
+    release day, use :func:`get_gdp_data` instead (calendar‑adjusted only).
     """
     return await _fetch_series("SEQGDPNAYSA", req)
 
 
-async def get_gdp_yoy_na_forecast_data(
+async def get_gdp_yoy_na_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """GDP y/y growth, **non‑adjusted (NSA)**.
+
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
 
     Series ID: ``SEQGDPNAYNA``.
     """
@@ -565,20 +712,38 @@ async def get_gdp_yoy_na_forecast_data(
 # ─────────────────────────────── CPI level/changes ───────────────────────────
 
 
-async def get_cpi_index_forecast_data(
+async def get_cpi_index_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """CPI index level (base 1980 = 100).
+
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
 
     Series ID: ``SEMCPINAANA``.
     """
     return await _fetch_series("SEMCPINAANA", req)
 
 
-async def get_cpi_yoy_forecast_data(
+async def get_cpi_yoy_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """CPI y/y inflation (headline).
+
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
 
     Series ID: ``SEMCPINAYNA``.
     """
@@ -588,22 +753,40 @@ async def get_cpi_yoy_forecast_data(
 # ─────────────────────────────── CPIF variants ───────────────────────────────
 
 
-async def get_cpif_yoy_forecast_data(
+async def get_cpif_yoy_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """CPIF y/y inflation—the **target variable**.
+
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
 
     Series ID: ``SEMCPIFNAYNA``.
     """
     return await _fetch_series("SEMCPIFNAYNA", req)
 
 
-async def get_cpif_ex_energy_index_forecast_data(
+async def get_cpif_ex_energy_index_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     CPIF **excluding energy, index level (1987 = 100)**
     *(Series ID: `SEMCPIFFEXANA`)*.
+
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
 
     **When to use**
     ----------------
@@ -619,7 +802,7 @@ async def get_cpif_ex_energy_index_forecast_data(
 # ─────────────── Nominal exchange rate (KIX) – index level ───────────────────
 
 
-async def get_nominal_exchange_rate_kix_index_forecast_data(
+async def get_nominal_exchange_rate_kix_index_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
@@ -632,6 +815,15 @@ async def get_nominal_exchange_rate_kix_index_forecast_data(
     Unit: Index, 18 Nov 1992 = 100
     *(Series ID: `SEQKIXNAANA`, 18 Nov 1992 = 100)*.
 
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
+
     Remember: A **higher** KIX value means a **weaker** krona.
     """
     return await _fetch_series("SEQKIXNAANA", req)
@@ -640,13 +832,22 @@ async def get_nominal_exchange_rate_kix_index_forecast_data(
 # ────────────────────────────── Demographics ─────────────────────────────────
 
 
-async def get_population_level_forecast_data(
+async def get_population_level_data(
     req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     Population aged 15‑74, **level (thousands)**
     Unit: Thousands of persons.
     *(Series ID: `SEQPOPNAANA`)*.
+
+    LLM call format
+    ---------------
+    Invoke the tool with one **JSON object** as argument, e.g.:
+
+        {"policy_round": "2022:1", "include_realized": true}
+
+    • Omit `"policy_round"` to retrieve every vintage.
+    • Set `"include_realized": true` to append realised (out‑turn) values.
 
     """
     return await _fetch_series("SEQPOPNAANA", req)

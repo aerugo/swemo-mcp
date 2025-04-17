@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import date
 from itertools import chain
 from typing import Protocol, runtime_checkable
 
@@ -31,9 +30,7 @@ def merge_realized(base: ForecastVintage, latest: ForecastVintage) -> ForecastVi
     # ---------- enrich every base observation ----------
     enriched_base: list[ForecastObservation] = []
     for obs in base.observations:
-        realized_val = (
-            realized_map.get(obs.dt) if obs.is_forecast else obs.value
-        )
+        realized_val = realized_map.get(obs.dt) if obs.is_forecast else obs.value
         enriched_base.append(
             ForecastObservation.model_validate(
                 {
