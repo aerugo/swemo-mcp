@@ -15,32 +15,11 @@ from riksbank_mcp.models import (
     PolicyRound,
     SeriesInfo,
 )
-from riksbank_mcp.query import ForecastRequest                   # NEW
+from riksbank_mcp.query import ForecastRequest
 from riksbank_mcp.services.monetary_policy_api import riksbanken_request
-from riksbank_mcp.utils.realized_merge import merge_realized, SeriesFetcher  # NEW
+from riksbank_mcp.utils.realized_merge import SeriesFetcher, merge_realized
 
 logger = logging.getLogger(__name__)
-
-
-async def _fetch_series(
-    series_id: str,
-    req: ForecastRequest,
-    *,
-    _fetcher: SeriesFetcher = get_policy_forecast_data,
-) -> MonetaryPolicyDataResponse:
-    base = await _fetcher(series_id, req.policy_round)
-
-    if req.include_realized:
-        rounds = await list_policy_forecast_rounds()
-        if rounds.rounds:
-            latest_round = max(rounds.rounds, key=lambda r: (r.year, r.iteration)).id
-            if latest_round != req.policy_round:
-                latest = await _fetcher(series_id, latest_round)
-                if base.vintages and latest.vintages:
-                    merged = merge_realized(base.vintages[0], latest.vintages[0])
-                    base.vintages[0] = merged
-    return base
-
 
 ___all__ = [
     "list_policy_forecast_rounds",
@@ -204,9 +183,9 @@ async def get_policy_forecast_data(
 
     for v in raw_vintages:
         # Determine cut‑off date for this vintage
-        cutoff_str: str | None = (
-            v.get("metadata", {}).get("forecast_cutoff_date")  # type: ignore[index]
-        )
+        cutoff_str: str | None = v.get("metadata", {}).get(
+            "forecast_cutoff_date"
+        )  # type: ignore[index]
         cutoff_dt: date | None = None
         if cutoff_str:
             try:
@@ -236,6 +215,26 @@ async def get_policy_forecast_data(
     )
 
 
+async def _fetch_series(
+    series_id: str,
+    req: ForecastRequest,
+    *,
+    _fetcher: SeriesFetcher = get_policy_forecast_data,
+) -> MonetaryPolicyDataResponse:
+    base = await _fetcher(series_id, req.policy_round)
+
+    if req.include_realized:
+        rounds = await list_policy_forecast_rounds()
+        if rounds.rounds:
+            latest_round = max(rounds.rounds, key=lambda r: (r.year, r.iteration)).id
+            if latest_round != req.policy_round:
+                latest = await _fetcher(series_id, latest_round)
+                if base.vintages and latest.vintages:
+                    merged = merge_realized(base.vintages[0], latest.vintages[0])
+                    base.vintages[0] = merged
+    return base
+
+
 # =============================================================================
 # ──────────────────────────── Thematic wrappers ──────────────────────────────
 # =============================================================================
@@ -247,7 +246,7 @@ async def get_policy_forecast_data(
 
 
 async def get_gdp_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     Gross Domestic Product, **calendar‑adjusted y/y growth**
@@ -264,11 +263,11 @@ async def get_gdp_forecast_data(
     • Because Statistics Sweden publishes these numbers first, they are the
     benchmark for **real‑time forecast evaluation**.
     """
-    return await get_policy_forecast_data("SEQGDPNAYCA", policy_round)
+    return await _fetch_series("SEQGDPNAYCA", req)
 
 
 async def get_unemployment_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     Unemployment rate, **seasonally adjusted LFS**
@@ -276,11 +275,11 @@ async def get_unemployment_forecast_data(
     Note: Seasonally adjusted series.
     *(Series ID: `SEQLABUEASA`)*.
     """
-    return await get_policy_forecast_data("SEQLABUEASA", policy_round)
+    return await _fetch_series("SEQLABUEASA", req)
 
 
 async def get_cpi_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     Headline CPI, **y/y inflation (NSA)**
@@ -289,11 +288,11 @@ async def get_cpi_forecast_data(
 
     Reference rate for **wage and rent indexation clauses** in Sweden.
     """
-    return await get_policy_forecast_data("SEMCPINAYNA", policy_round)
+    return await _fetch_series("SEMCPINAYNA", req)
 
 
 async def get_cpif_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     CPIF, **y/y inflation – Riksbank’s operational target**
@@ -305,11 +304,11 @@ async def get_cpif_forecast_data(
     Unit: Annual percentage change.
     *(Series ID: `SEMCPIFNAYNA`)*.
     """
-    return await get_policy_forecast_data("SEMCPIFNAYNA", policy_round)
+    return await _fetch_series("SEMCPIFNAYNA", req)
 
 
 async def get_cpif_ex_energy_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     CPIF **excluding energy**, y/y – the Riksbank’s canonical *core* measure.
@@ -320,11 +319,11 @@ async def get_cpif_ex_energy_forecast_data(
     The CPIF excluding energy is an example of such a measure.
     *(Series ID: `SEMCPIFFEXYNA`)*.
     """
-    return await get_policy_forecast_data("SEMCPIFFEXYNA", policy_round)
+    return await _fetch_series("SEMCPIFFEXYNA", req)
 
 
 async def get_hourly_labour_cost_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     Hourly labour cost, **y/y change (National Accounts)**
@@ -333,11 +332,11 @@ async def get_hourly_labour_cost_forecast_data(
 
     Key ingredient in **unit‑labour‑cost (ULC)** calculations: combine with GDP per hour to diagnose competitiveness.
     """
-    return await get_policy_forecast_data("SEACOMNAYCA", policy_round)
+    return await _fetch_series("SEACOMNAYCA", req)
 
 
 async def get_hourly_wage_na_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     Hourly wage, **National Accounts definition**, y/y
@@ -347,11 +346,11 @@ async def get_hourly_wage_na_forecast_data(
 
     Evaluate **labour‑share dynamics**: pair with GDP at factor cost to see if wage income keeps up with productivity.
     """
-    return await get_policy_forecast_data("SEAWAGNAYCA", policy_round)
+    return await _fetch_series("SEAWAGNAYCA", req)
 
 
 async def get_hourly_wage_nmo_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     Hourly wage, **National Mediation Office (NMO) measure**, y/y
@@ -362,11 +361,11 @@ async def get_hourly_wage_nmo_forecast_data(
     sample carefully in microdata studies.
     """
 
-    return await get_policy_forecast_data("SEAWAGKLYNA", policy_round)
+    return await _fetch_series("SEAWAGKLYNA", req)
 
 
 async def get_population_forecast_data(
-    req: ForecastRequest = ForecastRequest(),
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """Population level forecast (total population).
 
@@ -379,7 +378,7 @@ async def get_population_forecast_data(
 
 
 async def get_employed_persons_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     Number of **employed persons (LFS)**, seasonally adjusted
@@ -387,11 +386,11 @@ async def get_employed_persons_forecast_data(
     *(Series ID: `SEQLABEPASA`)*.
     """
 
-    return await get_policy_forecast_data("SEQLABEPASA", policy_round)
+    return await _fetch_series("SEQLABEPASA", req)
 
 
 async def get_labour_force_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     Labour force, **seasonally adjusted level**
@@ -401,11 +400,11 @@ async def get_labour_force_forecast_data(
     Denominator for **participation‑rate** calculations: employment / labour force.
     Seasonal adjustment makes the series smoother than the raw LFS count.
     """
-    return await get_policy_forecast_data("SEQLABLFASA", policy_round)
+    return await _fetch_series("SEQLABLFASA", req)
 
 
 async def get_gdp_gap_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     Output gap (GDP gap), **percent of potential output**
@@ -417,11 +416,11 @@ async def get_gdp_gap_forecast_data(
     assumptions; results can differ from other estimates (e.g. OECD).
     """
 
-    return await get_policy_forecast_data("SEQGDPGAPYSA", policy_round)
+    return await _fetch_series("SEQGDPGAPYSA", req)
 
 
 async def get_policy_rate_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     Policy (repo) rate, **quarterly mean**, percent.
@@ -435,11 +434,11 @@ async def get_policy_rate_forecast_data(
 
 
     """
-    return await get_policy_forecast_data("SEQRATENAYNA", policy_round)
+    return await _fetch_series("SEQRATENAYNA", req)
 
 
 async def get_general_government_net_lending_forecast_data(
-    req: ForecastRequest = ForecastRequest(),
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """General‑government net lending (% of GDP).
     Unit: Percent of GDP.
@@ -453,7 +452,7 @@ async def get_general_government_net_lending_forecast_data(
 
 
 async def get_gdp_level_saca_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     Real GDP level, **seasonally *and* calendar‑adjusted** (SACA).
@@ -472,11 +471,11 @@ async def get_gdp_level_saca_forecast_data(
     quarters are directly comparable; Q‑on‑Q growth rates capture genuine
     economic changes rather than calendar artefacts.
     """
-    return await get_policy_forecast_data("SEQGDPNAASA", policy_round)
+    return await _fetch_series("SEQGDPNAASA", req)
 
 
 async def get_gdp_level_ca_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     Real GDP level, **calendar‑adjusted (seasonal pattern intact)** (CA).
@@ -495,11 +494,11 @@ async def get_gdp_level_ca_forecast_data(
       Q2 vs Q2) is meaningful, but quarter‑to‑quarter movements still follow
       the familiar seasonal rhythm.
     """
-    return await get_policy_forecast_data("SEQGDPNAACA", policy_round)
+    return await _fetch_series("SEQGDPNAACA", req)
 
 
 async def get_gdp_level_na_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     Real GDP level, **non‑adjusted (NSA)**.
@@ -511,11 +510,11 @@ async def get_gdp_level_na_forecast_data(
     • Nothing – this is the raw series at constant prices. It still contains
       both seasonal swings *and* calendar effects.
     """
-    return await get_policy_forecast_data("SEQGDPNAANA", policy_round)
+    return await _fetch_series("SEQGDPNAANA", req)
 
 
 async def get_gdp_yoy_sa_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     GDP **y/y growth, seasonally *and* calendar‑adjusted**
@@ -532,11 +531,11 @@ async def get_gdp_yoy_sa_forecast_data(
     If you care about the precise wording used by Statistics Sweden on
     release day, use :func:`get_gdp_forecast_data` instead (calendar‑adjusted only).
     """
-    return await get_policy_forecast_data("SEQGDPNAYSA", policy_round)
+    return await _fetch_series("SEQGDPNAYSA", req)
 
 
 async def get_gdp_yoy_na_forecast_data(
-    req: ForecastRequest = ForecastRequest(),
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """GDP y/y growth, **non‑adjusted (NSA)**.
 
@@ -549,17 +548,17 @@ async def get_gdp_yoy_na_forecast_data(
 
 
 async def get_cpi_index_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """CPI index level (base 1980 = 100).
 
     Series ID: ``SEMCPINAANA``.
     """
-    return await get_policy_forecast_data("SEMCPINAANA", policy_round)
+    return await _fetch_series("SEMCPINAANA", req)
 
 
 async def get_cpi_yoy_forecast_data(
-    req: ForecastRequest = ForecastRequest(),
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """CPI y/y inflation (headline).
 
@@ -572,7 +571,7 @@ async def get_cpi_yoy_forecast_data(
 
 
 async def get_cpif_yoy_forecast_data(
-    req: ForecastRequest = ForecastRequest(),
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """CPIF y/y inflation—the **target variable**.
 
@@ -582,7 +581,7 @@ async def get_cpif_yoy_forecast_data(
 
 
 async def get_cpif_ex_energy_index_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     CPIF **excluding energy, index level (1987 = 100)**
@@ -596,14 +595,14 @@ async def get_cpif_ex_energy_index_forecast_data(
       household income with this index rather than headline CPI, thereby
       filtering out energy price noise.
     """
-    return await get_policy_forecast_data("SEMCPIFFEXANA", policy_round)
+    return await _fetch_series("SEMCPIFFEXANA", req)
 
 
 # ─────────────── Nominal exchange rate (KIX) – index level ───────────────────
 
 
 async def get_nominal_exchange_rate_kix_index_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     Nominal KIX exchange‑rate **index level**
@@ -617,14 +616,14 @@ async def get_nominal_exchange_rate_kix_index_forecast_data(
 
     Remember: A **higher** KIX value means a **weaker** krona.
     """
-    return await get_policy_forecast_data("SEQKIXNAANA", policy_round)
+    return await _fetch_series("SEQKIXNAANA", req)
 
 
 # ────────────────────────────── Demographics ─────────────────────────────────
 
 
 async def get_population_level_forecast_data(
-    policy_round: str | None = None,
+    req: ForecastRequest,
 ) -> MonetaryPolicyDataResponse:
     """
     Population aged 15‑74, **level (thousands)**
@@ -632,4 +631,4 @@ async def get_population_level_forecast_data(
     *(Series ID: `SEQPOPNAANA`)*.
 
     """
-    return await get_policy_forecast_data("SEQPOPNAANA", policy_round)
+    return await _fetch_series("SEQPOPNAANA", req)

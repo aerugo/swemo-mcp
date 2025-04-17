@@ -5,7 +5,6 @@ Pydantic models for Riksbank data validation and documentation.
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Annotated
 
 from pydantic import BaseModel, Field
 
@@ -55,7 +54,7 @@ class ForecastObservation(BaseModel):
     is_forecast: bool = Field(
         ...,
         description="True → value lies strictly after the vintage's "
-                    "forecast_cutoff_date; False → realised (history).",
+        "forecast_cutoff_date; False → realised (history).",
     )
 
 
